@@ -1,0 +1,41 @@
+name: Daily Birthday Greetings
+
+on:
+  schedule:
+    # Runs at 00:00 UTC = 08:00 Asia/Manila every day.
+    # GitHub cron is always UTC — adjust this if TIMEZONE (secret/variable
+    # below) is not Asia/Manila, or if you want a different local post time.
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Log the post instead of publishing it to Facebook'
+        type: boolean
+        default: false
+
+jobs:
+  post-birthdays:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: automation
+        run: npm install
+
+      - name: Run birthday greeting job
+        working-directory: automation
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+          TIMEZONE: ${{ vars.TIMEZONE }}
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
+        run: npm run post-birthdays
