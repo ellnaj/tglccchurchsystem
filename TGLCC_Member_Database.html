@@ -1136,19 +1136,19 @@
       </div>
       <div class="hint" style="margin-top:0;margin-bottom:14px;">Photos are resized automatically to keep the roster fast to load.</div>
       <div class="form-grid">
-        <div class="field"><label>Full name</label><input type="text" id="f-name" required></div>
+        <div class="field"><label>Full name</label><input type="text" id="f-name" required onblur="applyProperCase(this)"></div>
         <div class="field"><label>Birthday</label><input type="date" id="f-birthday" onchange="updateAgePreview()"></div>
         <div class="field"><label>Age</label><input type="text" id="f-age" readonly placeholder="Auto-calculated"></div>
         <div class="field"><label>Contact number</label><input type="tel" id="f-contact" placeholder="09xx xxx xxxx"></div>
       </div>
       <div class="form-grid full">
-        <div class="field"><label>Address</label><textarea id="f-address"></textarea></div>
+        <div class="field"><label>Address</label><textarea id="f-address" onblur="applyProperCase(this)"></textarea></div>
       </div>
 
       <div class="form-section-title">Church journey</div>
       <div class="form-grid">
         <div class="field"><label>Started attending</label><input type="date" id="f-started"></div>
-        <div class="field"><label>Invited by</label><input type="text" id="f-inviter"></div>
+        <div class="field"><label>Invited by</label><input type="text" id="f-inviter" onblur="applyProperCase(this)"></div>
       </div>
       <div class="form-grid">
         <div class="field">
@@ -2495,6 +2495,27 @@ function matchesMinistryFilter(m, filterValue){
     return roles.some(r=>r.trim().toLowerCase()===role);
   }
   return false;
+}
+
+// Converts free-text input to Proper Case (each word capitalized), while
+// respecting apostrophes and hyphens (e.g. "o'brien-smith" -> "O'Brien-Smith")
+// and preserving blank lines/spacing for multi-line fields like address/notes.
+function toProperCase(str){
+  if(!str) return str;
+  return str.replace(/[^\s]+/g, word=>{
+    return word.replace(/[A-Za-z]+/g, letters=>
+      letters.charAt(0).toUpperCase() + letters.slice(1).toLowerCase()
+    );
+  });
+}
+function applyProperCase(el){
+  if(!el) return;
+  const start = el.selectionStart, end = el.selectionEnd;
+  const newVal = toProperCase(el.value);
+  if(newVal !== el.value){
+    el.value = newVal;
+    if(typeof start === 'number'){ try{ el.setSelectionRange(start,end); }catch(e){} }
+  }
 }
 
 function escapeHtml(s){

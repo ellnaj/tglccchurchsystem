@@ -397,7 +397,7 @@ function buildBio(row, isActive){
   let sentence1;
   if(isActive){
     if(started){
-      sentence1 = `${name} has been faithfully served as ${ministryPhrase} since ${started}, while also fulfilling the responsibilities of ${rolePhrase(row)}.`;
+      sentence1 = `${name} has been faithfully serving as ${ministryPhrase} since ${started}, while also fulfilling the responsibilities of ${rolePhrase(row)}.`;
     } else {
       sentence1 = `${name} currently serves in ${ministryPhrase} as ${rolePhrase(row)}.`;
     }
