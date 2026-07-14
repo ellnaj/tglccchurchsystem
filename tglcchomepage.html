@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Greatest Love of Christ Church — Church Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --paper:#FAF6EC;
+    --surface:#FFFFFF;
+    --ink:#292620;
+    --ink-soft:#6E6B5D;
+    --ink-faint:#A6A18D;
+    --line:#E5DECB;
+    --line-strong:#D3C9AC;
+    --green:#3F52B6;
+    --green-dark:#262F70;
+    --green-tint:#E8ECFB;
+    --gold:#B8862E;
+    --gold-tint:#FBF0DA;
+    --red:#A33F3F;
+    --red-tint:#F7E8E6;
+    --font-display:'Lora', serif;
+    --font-body:'Inter', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px;}
+
+  /* ---- header / nav ---- */
+  .site-header{
+    border-bottom:2px solid var(--ink);
+    background:var(--paper);
+    position:sticky;top:0;z-index:50;
+    transition:box-shadow .4s ease;
+  }
+  .site-header.is-scrolled{box-shadow:0 8px 24px -18px rgba(41,38,32,0.45);}
+  .brand-logo{transition:transform .5s cubic-bezier(.22,1,.36,1);}
+  .brand:hover .brand-logo{transform:rotate(-4deg) scale(1.05);}
+  .site-header .wrap{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 24px;gap:16px;flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:14px;}
+  .brand-logo{width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+  .brand-titles .church-name{
+    font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:0.04em;
+    color:var(--green-dark);margin:0 0 2px;
+  }
+  .brand-titles .brand-sub{
+    font-family:var(--font-display);font-weight:600;font-size:18px;letter-spacing:-0.01em;
+  }
+  .site-nav{display:flex;align-items:center;gap:22px;flex-wrap:wrap;}
+  .site-nav a{
+    font-size:13.5px;font-weight:600;color:var(--ink-soft);text-decoration:none;
+  }
+  .site-nav a:hover{color:var(--green-dark);}
+  /* ---- hero ---- */
+  .hero{
+    background:linear-gradient(180deg,var(--green-tint) 0%, var(--paper) 100%);
+    border-bottom:1px solid var(--line);
+  }
+  .hero .wrap{padding:64px 24px 56px;text-align:center;}
+  .hero-eyebrow{
+    font-family:var(--font-mono);font-size:12px;letter-spacing:0.08em;text-transform:uppercase;
+    color:var(--green-dark);margin-bottom:14px;
+    opacity:0;animation:heroUp .7s cubic-bezier(.22,1,.36,1) .05s forwards;
+  }
+  .hero h1{
+    font-family:var(--font-display);font-weight:700;font-size:42px;line-height:1.15;
+    margin:0 0 16px;letter-spacing:-0.01em;
+    opacity:0;animation:heroUp .8s cubic-bezier(.22,1,.36,1) .15s forwards;
+  }
+  .hero p.lead{
+    font-size:16.5px;color:var(--ink-soft);max-width:620px;margin:0 auto 30px;line-height:1.6;
+    opacity:0;animation:heroUp .8s cubic-bezier(.22,1,.36,1) .28s forwards;
+  }
+  .hero-actions{
+    display:flex;gap:14px;justify-content:center;flex-wrap:wrap;
+    opacity:0;animation:heroUp .8s cubic-bezier(.22,1,.36,1) .4s forwards;
+  }
+  @keyframes heroUp{
+    from{opacity:0;transform:translateY(14px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .hero-eyebrow,.hero h1,.hero p.lead,.hero-actions{opacity:1;animation:none;transform:none;}
+  }
+  .btn{
+    font-family:var(--font-body);font-weight:700;font-size:14.5px;
+    padding:13px 26px;border-radius:999px;text-decoration:none;display:inline-block;cursor:pointer;
+    border:1px solid transparent;transition:transform .35s cubic-bezier(.22,1,.36,1), box-shadow .35s ease, background .3s ease, border-color .3s ease;
+  }
+  .btn-primary{background:var(--green);color:#fff;border-color:var(--green-dark);}
+  .btn-primary:hover{background:var(--green-dark);transform:translateY(-2px);box-shadow:0 12px 22px -10px rgba(38,47,112,0.5);}
+  .btn-ghost{background:transparent;color:var(--green-dark);border-color:var(--line-strong);}
+  .btn-ghost:hover{border-color:var(--green-dark);background:var(--surface);transform:translateY(-2px);}
+  .site-nav a{position:relative;transition:color .3s ease;}
+  .site-nav a::after{
+    content:"";position:absolute;left:0;right:100%;bottom:-4px;height:2px;background:var(--green-dark);
+    transition:right .35s cubic-bezier(.22,1,.36,1);
+  }
+  .site-nav a:hover::after{right:0;}
+  .icon-link{
+    display:flex;align-items:center;justify-content:center;
+    width:38px;height:38px;border-radius:50%;margin-left:6px;
+    background:var(--green-tint);border:1px solid var(--line-strong);
+    transition:transform .4s cubic-bezier(.22,1,.36,1), background .35s ease, box-shadow .35s ease, border-color .35s ease;
+  }
+  .icon-link::after{content:none;}
+  .icon-link svg{width:17px;height:17px;stroke:var(--green-dark);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .4s ease;}
+  .icon-link:hover{
+    background:var(--green-dark);border-color:var(--green-dark);
+    transform:translateY(-2px) scale(1.06);
+    box-shadow:0 10px 20px -10px rgba(38,47,112,0.55);
+  }
+  .icon-link:hover svg{stroke:#fff;transform:translate(1px,-1px);}
+  .icon-link-label{display:none;}
+
+  /* ---- mobile nav toggle ---- */
+  .nav-toggle{
+    display:none;flex-direction:column;justify-content:center;align-items:center;gap:5px;
+    width:38px;height:38px;border-radius:10px;flex-shrink:0;
+    background:var(--green-tint);border:1px solid var(--line-strong);cursor:pointer;
+    transition:background .3s ease, border-color .3s ease;
+  }
+  .nav-toggle span{width:18px;height:2px;background:var(--green-dark);border-radius:2px;transition:transform .3s ease, opacity .3s ease;}
+  .nav-toggle.is-open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+  .nav-toggle.is-open span:nth-child(2){opacity:0;}
+  .nav-toggle.is-open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+  .nav-toggle:hover{border-color:var(--green-dark);}
+
+  /* ---- section shell ---- */
+  section{padding:64px 0;border-bottom:1px solid var(--line);}
+  section:last-of-type{border-bottom:none;}
+  .section-head{max-width:640px;margin:0 auto 36px;text-align:center;}
+  .section-eyebrow{
+    font-family:var(--font-mono);font-size:11.5px;letter-spacing:0.06em;text-transform:uppercase;
+    color:var(--gold);margin-bottom:8px;
+  }
+  .section-head h2{
+    font-family:var(--font-display);font-weight:600;font-size:28px;margin:0 0 10px;letter-spacing:-0.01em;
+  }
+  .section-head p{color:var(--ink-soft);font-size:15px;line-height:1.6;margin:0;}
+
+  /* ---- about ---- */
+  .about-grid{display:grid;grid-template-columns:1.1fr 0.9fr;gap:40px;align-items:center;}
+  .about-grid p{color:var(--ink-soft);font-size:15px;line-height:1.75;margin:0 0 14px;}
+  .about-card{
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:24px;transition:transform .45s cubic-bezier(.22,1,.36,1), box-shadow .45s ease, border-color .4s ease;
+  }
+  .about-card:hover{
+    transform:translateY(-4px);border-color:var(--line-strong);
+    box-shadow:0 18px 32px -20px rgba(38,47,112,0.35);
+  }
+  .about-card h3{font-family:var(--font-display);font-size:17px;margin:0 0 6px;}
+  .about-stats{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px;}
+  .about-stat{border-top:2px solid var(--gold);padding-top:8px;transition:transform .35s ease;}
+  .about-stat:hover{transform:translateY(-2px);}
+  .about-stat b{display:block;font-family:var(--font-display);font-size:22px;color:var(--green-dark);}
+  .about-stat span{font-size:12px;color:var(--ink-soft);}
+
+  /* ---- features ---- */
+  .feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  .feature-card{
+    position:relative;background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:26px 24px;overflow:hidden;isolation:isolate;
+    transition:transform .45s cubic-bezier(.22,1,.36,1), box-shadow .45s cubic-bezier(.22,1,.36,1), border-color .45s ease;
+  }
+  .feature-card::before{
+    content:"";position:absolute;inset:0;z-index:-1;opacity:0;
+    background:linear-gradient(160deg, var(--green-tint) 0%, var(--surface) 55%);
+    transition:opacity .5s ease;
+  }
+  .feature-card::after{
+    content:"";position:absolute;left:0;right:0;bottom:0;height:3px;transform:scaleX(0);transform-origin:left;
+    background:linear-gradient(90deg, var(--gold), var(--green));
+    transition:transform .5s cubic-bezier(.22,1,.36,1);
+  }
+  .feature-card:hover{
+    transform:translateY(-6px);
+    border-color:var(--line-strong);
+    box-shadow:0 18px 34px -18px rgba(38,47,112,0.35), 0 2px 8px rgba(38,47,112,0.06);
+  }
+  .feature-card:hover::before{opacity:1;}
+  .feature-card:hover::after{transform:scaleX(1);}
+  .feature-icon{
+    width:46px;height:46px;border-radius:12px;background:var(--green-tint);color:var(--green-dark);
+    display:flex;align-items:center;justify-content:center;margin-bottom:16px;
+    transition:transform .5s cubic-bezier(.22,1,.36,1), background .4s ease, color .4s ease, box-shadow .4s ease;
+  }
+  .feature-icon svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;transition:transform .5s ease;}
+  .feature-card:hover .feature-icon{
+    background:var(--green-dark);color:#fff;transform:translateY(-3px) rotate(-6deg) scale(1.06);
+    box-shadow:0 10px 20px -8px rgba(38,47,112,0.55);
+  }
+  .feature-card:hover .feature-icon svg{transform:scale(1.08);}
+  .feature-card h3{font-family:var(--font-display);font-size:16.5px;margin:0 0 8px;position:relative;transition:color .35s ease;}
+  .feature-card:hover h3{color:var(--green-dark);}
+  .feature-card p{font-size:13.5px;color:var(--ink-soft);line-height:1.6;margin:0;position:relative;}
+  .feature-card .benefit{
+    margin-top:12px;font-size:12px;color:var(--gold);font-weight:600;font-family:var(--font-mono);
+    position:relative;display:flex;align-items:center;gap:6px;
+  }
+  .feature-card .benefit::before{
+    content:"";width:5px;height:5px;border-radius:50%;background:var(--gold);flex-shrink:0;
+    transition:transform .4s ease;
+  }
+  .feature-card:hover .benefit::before{transform:scale(1.6);}
+
+  /* ---- scroll reveal ---- */
+  .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1);}
+  .reveal.is-visible{opacity:1;transform:translateY(0);}
+  .feature-grid .reveal:nth-child(1){transition-delay:.02s;}
+  .feature-grid .reveal:nth-child(2){transition-delay:.08s;}
+  .feature-grid .reveal:nth-child(3){transition-delay:.14s;}
+  .feature-grid .reveal:nth-child(4){transition-delay:.2s;}
+  .feature-grid .reveal:nth-child(5){transition-delay:.26s;}
+  .feature-grid .reveal:nth-child(6){transition-delay:.32s;}
+  @media (prefers-reduced-motion:reduce){
+    .reveal{opacity:1;transform:none;transition:none;}
+    .feature-card,.feature-icon,.org-pill,.ministry-chip,.stat-card{transition:none !important;}
+  }
+
+  /* ---- church structure ---- */
+  .structure-wrap{
+    background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:36px 30px;position:relative;overflow:hidden;
+  }
+  .structure-wrap::before{
+    content:"";position:absolute;top:-60px;right:-60px;width:220px;height:220px;border-radius:50%;
+    background:radial-gradient(circle, var(--green-tint) 0%, transparent 70%);pointer-events:none;
+  }
+  .org-tiers{display:flex;flex-direction:column;align-items:center;gap:0;margin-bottom:32px;position:relative;}
+  .org-pill{
+    font-family:var(--font-mono);font-size:12px;font-weight:600;padding:11px 24px;border-radius:999px;
+    text-align:center;cursor:default;
+    transition:transform .4s cubic-bezier(.22,1,.36,1), box-shadow .4s ease, letter-spacing .4s ease;
+  }
+  .org-pill.lead{background:var(--green-dark);color:#fff;}
+  .org-pill.head{background:var(--green-tint);color:var(--green-dark);border:1px solid var(--line-strong);}
+  .org-pill:hover{
+    transform:translateY(-3px) scale(1.04);letter-spacing:0.03em;
+    box-shadow:0 12px 24px -12px rgba(38,47,112,0.4);
+  }
+  .org-connector{width:2px;height:20px;background:linear-gradient(180deg, var(--line-strong), var(--gold));margin:2px 0;}
+  .ministry-chips{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;position:relative;}
+  .ministry-chip{
+    font-size:12.5px;background:var(--gold-tint);color:var(--gold);border:1px solid #EAD9AE;
+    padding:7px 16px;border-radius:999px;font-weight:600;cursor:default;
+    transition:transform .35s cubic-bezier(.22,1,.36,1), background .35s ease, color .35s ease, box-shadow .35s ease, border-color .35s ease;
+  }
+  .ministry-chip:hover{
+    background:var(--gold);color:#fff;border-color:var(--gold);
+    transform:translateY(-3px) scale(1.05);
+    box-shadow:0 10px 18px -10px rgba(184,134,46,0.55);
+  }
+  .structure-note{
+    text-align:center;color:var(--ink-soft);font-size:12.5px;margin-top:24px;position:relative;
+  }
+
+  /* ---- active members / dashboard ---- */
+  .stat-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:32px;}
+  .stat-card{
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:24px;text-align:center;
+    transition:transform .4s cubic-bezier(.22,1,.36,1), box-shadow .4s ease, border-color .4s ease;
+  }
+  .stat-card:hover{
+    transform:translateY(-5px);border-color:var(--line-strong);
+    box-shadow:0 18px 30px -18px rgba(38,47,112,0.32);
+  }
+  .stat-card .num{
+    font-family:var(--font-display);font-weight:700;font-size:38px;color:var(--green-dark);
+    line-height:1;margin-bottom:8px;
+  }
+  .stat-card .label{
+    font-family:var(--font-mono);font-size:11.5px;text-transform:uppercase;letter-spacing:0.04em;
+    color:var(--ink-soft);
+  }
+  .stat-card.gold .num{color:var(--gold);}
+
+  .analytics-panel{
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:26px;transition:box-shadow .4s ease, border-color .4s ease;
+  }
+  .analytics-panel:hover{border-color:var(--line-strong);box-shadow:0 18px 32px -22px rgba(38,47,112,0.3);}
+  .analytics-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:10px;}
+  .analytics-head h3{font-family:var(--font-display);font-size:16.5px;margin:0;}
+  .analytics-head select{
+    font-family:var(--font-body);font-size:12.5px;padding:6px 10px;border:1px solid var(--line-strong);
+    border-radius:6px;background:var(--paper);color:var(--ink);
+  }
+  .analytics-sub{font-size:12px;color:var(--ink-soft);margin:0 0 20px;}
+  .bar-chart{display:flex;align-items:flex-end;gap:8px;height:180px;padding:0 4px;}
+  .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;}
+  .bar-val{font-size:10.5px;color:var(--ink-soft);margin-bottom:4px;font-family:var(--font-mono);}
+  .bar{width:100%;max-width:26px;background:var(--green);border-radius:4px 4px 0 0;min-height:2px;}
+  .bar-label{font-size:10px;color:var(--ink-faint);margin-top:6px;font-family:var(--font-mono);text-align:center;}
+  .analytics-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:20px;}
+  .year-list{display:flex;flex-direction:column;gap:10px;}
+  .year-row{display:flex;align-items:center;gap:10px;}
+  .year-row .yr{font-family:var(--font-mono);font-size:12px;width:38px;color:var(--ink-soft);}
+  .year-row .track{flex:1;height:8px;background:var(--green-tint);border-radius:999px;overflow:hidden;}
+  .year-row .fill{height:100%;background:var(--gold);border-radius:999px;}
+  .year-row .n{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-soft);width:34px;text-align:right;}
+  .analytics-empty{color:var(--ink-faint);font-size:13px;text-align:center;padding:30px 0;}
+  .analytics-status{font-size:11.5px;color:var(--ink-faint);margin-top:14px;text-align:right;}
+
+  /* ---- final cta ---- */
+  .final-cta{
+    background:var(--green-dark);color:#fff;text-align:center;border-bottom:none;
+  }
+  .final-cta h2{font-family:var(--font-display);font-size:26px;margin:0 0 12px;}
+  .final-cta p{color:#D9DEF3;font-size:14.5px;margin:0 0 26px;}
+  .final-cta .btn-primary{background:var(--gold);border-color:#8C6620;color:#241C08;}
+  .final-cta .btn-primary:hover{background:#CD9A3F;}
+
+  /* ---- footer (kept identical to system) ---- */
+  .app-footer{
+    text-align:center;font-size:11.5px;color:var(--ink-faint);
+    padding:24px 24px 34px;line-height:1.6;
+  }
+
+  @media (max-width:820px){
+    .about-grid{grid-template-columns:1fr;}
+    .feature-grid{grid-template-columns:1fr 1fr;}
+    .stat-cards{grid-template-columns:1fr;}
+    .analytics-grid{grid-template-columns:1fr;}
+    .hero h1{font-size:32px;}
+  }
+  @media (max-width:760px){
+    .nav-toggle{display:flex;}
+    .site-nav{
+      display:none;flex-direction:column;align-items:stretch;gap:2px;
+      width:100%;background:var(--surface);border:1px solid var(--line);border-radius:12px;
+      padding:8px;margin-top:10px;
+    }
+    .site-nav.is-open{display:flex;}
+    .site-nav a{width:100%;padding:11px 14px;border-radius:8px;transition:background .25s ease, color .25s ease;}
+    .site-nav a:hover{background:var(--green-tint);}
+    .site-nav a::after{display:none;}
+    .site-nav .icon-link{
+      width:100%;height:auto;border-radius:8px;justify-content:flex-start;
+      padding:11px 14px;background:var(--green-tint);margin-left:0;
+    }
+    .site-nav .icon-link-label{display:inline;font-size:13.5px;font-weight:600;margin-left:10px;}
+    .site-header .wrap{flex-wrap:wrap;}
+  }
+  @media (max-width:560px){
+    .feature-grid{grid-template-columns:1fr;}
+    .bar-chart{gap:4px;}
+    .bar-label{font-size:8.5px;}
+  }
+  @media (max-width:420px){
+    .hero h1{font-size:27px;}
+    .hero-actions{flex-direction:column;align-items:stretch;}
+    .hero-actions .btn{text-align:center;}
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <div class="brand">
+      <img class="brand-logo" src="data:image/jpeg;base64,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" alt="Church logo">
+      <div class="brand-titles">
+        <div class="church-name">The Greatest Love of Christ Church</div>
+        <div class="brand-sub">Church Management System</div>
+      </div>
+    </div>
+    <nav class="site-nav" id="siteNav">
+      <a href="#about">About</a>
+      <a href="#features">Features</a>
+      <a href="#structure">Church Structure</a>
+      <a href="#members">Summary</a>
+      <a href="tglccworkers.html">Workers &amp; Leaders</a>
+      <a class="icon-link" href="TGLCC_Member_Database.html" title="Connect to the system" aria-label="Open system">
+        <svg viewBox="0 0 24 24"><path d="M14 4.5h5.5V10"></path><path d="M19.3 4.7 11 13"></path><path d="M8.5 5.5H6A1.5 1.5 0 0 0 4.5 7v11A1.5 1.5 0 0 0 6 19.5h11a1.5 1.5 0 0 0 1.5-1.5v-2.5"></path></svg>
+        <span class="icon-link-label">Open the System</span>
+      </a>
+    </nav>
+    <button class="nav-toggle" id="navToggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="siteNav">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-eyebrow">Church Member Database</div>
+    <h1>Keeping track of every soul<br>God has added to our family.</h1>
+    <p class="lead">A single home for TGLCC's membership records, worker and leadership tracking, and Friday-service attendance — built to help our shepherds care for the flock well.</p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="TGLCC_Member_Database.html">Enter the System</a>
+      <a class="btn btn-ghost" href="#about">Learn more</a>
+    </div>
+  </div>
+</section>
+
+<section id="about">
+  <div class="wrap">
+    <div class="about-grid">
+      <div>
+        <div class="section-eyebrow">About</div>
+        <h2 style="font-family:var(--font-display);font-weight:600;font-size:28px;margin:0 0 16px;letter-spacing:-0.01em;">Built for The Greatest Love of Christ Church</h2>
+        <p>The TGLCC Church Management System is our church's digital record book — replacing scattered spreadsheets and paper logs with one trustworthy place to keep track of who belongs to our family, who serves and who leads.</p>
+        <p>Every member's story lives here: when they started attending, their baptism, the ministry they serve in and every Friday they've walked through our doors. It's built so pastors, admins and ministry heads can see the health of the church at a glance — and follow up with the people who need it most.</p>
+        <p>Access is protected by role-based login, so the right people see the right information, while the whole church body stays visible to those who shepherd it.</p>
+      </div>
+      <div class="about-card reveal">
+        <h3>Why we built this</h3>
+        <p style="font-size:13.5px;color:var(--ink-soft);margin:0 0 14px;">To know our members by name, not by number — and to never lose track of someone who stops showing up.</p>
+        <div class="about-stats">
+          <div class="about-stat"><b id="aboutTotal">—</b><span>Total members on file</span></div>
+          <div class="about-stat"><b id="aboutActive">—</b><span>Currently active</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="section-eyebrow">Features &amp; Benefits</div>
+      <h2>Everything a shepherd's heart needs</h2>
+      <p>Purpose-built tools for church administration — designed around how ministries actually run.</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card reveal">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M4.5 20c1.4-4 4.2-6 7.5-6s6.1 2 7.5 6"></path></svg>
+        </div>
+        <h3>Member Records</h3>
+        <p>Full profiles with photo, contact, address, birthday, inviter, and baptism history — searchable in seconds.</p>
+        <div class="benefit">Benefit: no more lost paper forms</div>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.2"></rect><path d="M3.5 9.5h17"></path><path d="M8 3v4M16 3v4"></path><path d="M7.5 13.5h2M11 13.5h2M14.5 13.5h2M7.5 16.5h2M11 16.5h2"></path></svg>
+        </div>
+        <h3>Attendance Tracking</h3>
+        <p>Log every Friday service and instantly see who's present, who's missing, and who needs a follow-up call.</p>
+        <div class="benefit">Benefit: catch dropped-off members early</div>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><path d="M4 20V10"></path><path d="M10 20V4"></path><path d="M16 20v-7"></path><path d="M2.5 20.5h19"></path></svg>
+        </div>
+        <h3>Attendance Analytics</h3>
+        <p>Month-by-month and year-by-year attendance trends, plus high/low week patterns, all visualized.</p>
+        <div class="benefit">Benefit: data-driven ministry planning</div>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><path d="M14.5 3.5a3 3 0 0 0-4.2 4.2l-7 7a1.7 1.7 0 0 0 2.4 2.4l7-7a3 3 0 0 0 4.2-4.2l-2.1 2.1-2-2z"></path></svg>
+        </div>
+        <h3>Worker &amp; Leader Tracking</h3>
+        <p>Mark members as workers or leaders, record their commissioning dates, and celebrate serving anniversaries.</p>
+        <div class="benefit">Benefit: honor faithful service</div>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="6" r="2.2"></circle><circle cx="5.5" cy="17.5" r="2.2"></circle><circle cx="18.5" cy="17.5" r="2.2"></circle><path d="M12 8.2V12M12 12 5.5 15.3M12 12l6.5 3.3"></path></svg>
+        </div>
+        <h3>Church Structure &amp; Org Chart</h3>
+        <p>An always-current organizational chart built automatically from ministry roles assigned to each member.</p>
+        <div class="benefit">Benefit: clarity on who reports to whom</div>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2"></rect><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"></path><circle cx="12" cy="15" r="1.3"></circle></svg>
+        </div>
+        <h3>Secure, Role-Based Access</h3>
+        <p>Admin, staff, and viewer roles with password protection — plus Excel import/export for backups and reports.</p>
+        <div class="benefit">Benefit: data stays safe and organized</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="structure">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="section-eyebrow">Church Structure</div>
+      <h2>How our ministries are organized</h2>
+      <p>Every member's church role feeds into a living organizational chart inside the system — this is a snapshot of the ministries that make up TGLCC.</p>
+    </div>
+    <div class="structure-wrap reveal">
+      <div class="org-tiers">
+        <div class="org-pill lead">Pastoral Leadership</div>
+        <div class="org-connector"></div>
+        <div class="org-pill head">Ministry Heads &amp; Deacons</div>
+        <div class="org-connector"></div>
+        <div class="org-pill head">Workers &amp; Ministry Members</div>
+      </div>
+      <div class="ministry-chips">
+        <span class="ministry-chip">Music Ministry</span>
+        <span class="ministry-chip">Cooking Ministry</span>
+        <span class="ministry-chip">I-Care Ministry</span>
+        <span class="ministry-chip">Kids Ministry</span>
+        <span class="ministry-chip">Action &amp; Media Ministry</span>
+        <span class="ministry-chip">Finance Ministry</span>
+        <span class="ministry-chip">Logistics Ministry</span>
+        <span class="ministry-chip">Intercessory Ministry</span>
+        <span class="ministry-chip">Security Ministry</span>
+        <span class="ministry-chip">Men's Ministry</span>
+        <span class="ministry-chip">Women's Ministry</span>
+        <span class="ministry-chip">Deacons</span>
+        <span class="ministry-chip">Transport Ministry</span>
+        <span class="ministry-chip">Ushers Ministry</span>
+      </div>
+      <div class="structure-note">The full, interactive org chart — built live from each member's assigned church roles — is available inside the system.</div>
+    </div>
+  </div>
+</section>
+
+<section id="members">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="section-eyebrow">Summary</div>
+      <h2>Summary of members, workers &amp; leaders</h2>
+      <p>A live summary pulled straight from the church database.</p>
+    </div>
+
+    <div class="stat-cards">
+      <div class="stat-card reveal">
+        <div class="num" id="statActiveMembers">—</div>
+        <div class="label">Active Members</div>
+      </div>
+      <div class="stat-card gold reveal">
+        <div class="num" id="statWorkers">—</div>
+        <div class="label">Workers</div>
+      </div>
+      <div class="stat-card gold reveal">
+        <div class="num" id="statLeaders">—</div>
+        <div class="label">Leaders</div>
+      </div>
+    </div>
+
+    <div class="analytics-panel reveal">
+      <div class="analytics-grid">
+        <div>
+          <div class="analytics-head">
+            <h3>Attendance by Month</h3>
+            <select id="yearSelect"></select>
+          </div>
+          <p class="analytics-sub">Total check-ins logged per month for the selected year.</p>
+          <div id="monthChart" class="bar-chart"></div>
+        </div>
+        <div>
+          <div class="analytics-head"><h3>Attendance by Year</h3></div>
+          <p class="analytics-sub">Total check-ins logged per year, all-time.</p>
+          <div id="yearChart" class="year-list"></div>
+        </div>
+      </div>
+      <div class="analytics-status" id="analyticsStatus">Loading live data…</div>
+    </div>
+  </div>
+</section>
+
+<section class="final-cta">
+  <div class="wrap">
+    <h2>Ready to serve the family well?</h2>
+    <p>Sign in to manage members, log attendance, and see the church structure in full.</p>
+    <a class="btn btn-primary" href="TGLCC_Member_Database.html">Connect to the System →</a>
+  </div>
+</section>
+
+<div class="app-footer">&copy; 2026 The Greatest Love of Christ Church. All Rights Reserved.<br>Developed by Lemuel Yrigan.</div>
+
+<script>
+const SUPABASE_URL = 'https://vmbxnudsfsyknxekueqs.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZtYnhudWRzZnN5a254ZWt1ZXFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0MDU2MTIsImV4cCI6MjA5ODk4MTYxMn0.OS8hP5rFKoCQuZKzxKvGmyoTdD24UT1qlbVd2KAGUzo';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+async function loadMemberStats(){
+  try{
+    const { data, error } = await supabaseClient.from('members').select('active,worker,leader');
+    if(error) throw error;
+    const rows = data || [];
+    const active = rows.filter(m => m.active !== false);
+    const workers = active.filter(m => m.worker).length;
+    const leaders = active.filter(m => m.leader).length;
+    document.getElementById('statActiveMembers').textContent = active.length;
+    document.getElementById('statWorkers').textContent = workers;
+    document.getElementById('statLeaders').textContent = leaders;
+    document.getElementById('aboutTotal').textContent = rows.length;
+    document.getElementById('aboutActive').textContent = active.length;
+  }catch(e){
+    console.error('Failed to load member stats:', e);
+    ['statActiveMembers','statWorkers','statLeaders','aboutTotal','aboutActive'].forEach(id=>{
+      document.getElementById(id).textContent = '—';
+    });
+  }
+}
+
+let attendanceRecords = [];
+
+async function loadAttendance(){
+  try{
+    const { data, error } = await supabaseClient
+      .from('attendance_records')
+      .select('attendance_date');
+    if(error) throw error;
+    attendanceRecords = data || [];
+    buildYearSelect();
+    renderMonthChart();
+    renderYearChart();
+    document.getElementById('analyticsStatus').textContent =
+      attendanceRecords.length ? 'Live data from the church database.' : 'No attendance records yet.';
+  }catch(e){
+    console.error('Failed to load attendance:', e);
+    document.getElementById('monthChart').innerHTML = '<div class="analytics-empty">Could not load attendance data.</div>';
+    document.getElementById('yearChart').innerHTML = '<div class="analytics-empty">Could not load attendance data.</div>';
+    document.getElementById('analyticsStatus').textContent = 'Connection error — showing no data.';
+  }
+}
+
+function buildYearSelect(){
+  const sel = document.getElementById('yearSelect');
+  const years = Array.from(new Set(attendanceRecords.map(r => r.attendance_date.slice(0,4)))).sort().reverse();
+  const currentYear = String(new Date().getFullYear());
+  if(!years.includes(currentYear)) years.unshift(currentYear);
+  sel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+  sel.value = years.includes(currentYear) ? currentYear : years[0];
+  sel.onchange = renderMonthChart;
+}
+
+function renderMonthChart(){
+  const sel = document.getElementById('yearSelect');
+  const year = sel.value;
+  const counts = new Array(12).fill(0);
+  attendanceRecords.forEach(r => {
+    if(r.attendance_date && r.attendance_date.slice(0,4) === year){
+      const m = parseInt(r.attendance_date.slice(5,7), 10) - 1;
+      if(m >= 0 && m < 12) counts[m]++;
+    }
+  });
+  const max = Math.max(...counts, 1);
+  const el = document.getElementById('monthChart');
+  if(!attendanceRecords.length){
+    el.innerHTML = '<div class="analytics-empty">No attendance records yet.</div>';
+    return;
+  }
+  el.innerHTML = counts.map((c,i) => `
+    <div class="bar-col">
+      <div class="bar-val">${c || ''}</div>
+      <div class="bar" style="height:${Math.max((c/max)*100,c>0?4:0)}%"></div>
+      <div class="bar-label">${MONTH_LABELS[i]}</div>
+    </div>`).join('');
+}
+
+function renderYearChart(){
+  const byYear = {};
+  attendanceRecords.forEach(r => {
+    if(!r.attendance_date) return;
+    const y = r.attendance_date.slice(0,4);
+    byYear[y] = (byYear[y] || 0) + 1;
+  });
+  const years = Object.keys(byYear).sort();
+  const el = document.getElementById('yearChart');
+  if(!years.length){
+    el.innerHTML = '<div class="analytics-empty">No attendance records yet.</div>';
+    return;
+  }
+  const max = Math.max(...years.map(y => byYear[y]), 1);
+  el.innerHTML = years.map(y => `
+    <div class="year-row">
+      <span class="yr">${y}</span>
+      <span class="track"><span class="fill" style="width:${(byYear[y]/max)*100}%"></span></span>
+      <span class="n">${byYear[y]}</span>
+    </div>`).join('');
+}
+
+loadMemberStats();
+loadAttendance();
+
+/* ---- elegant scroll interactions ---- */
+const revealEls = document.querySelectorAll('.reveal');
+if('IntersectionObserver' in window && revealEls.length){
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if(entry.isIntersecting){
+        entry.target.classList.add('is-visible');
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+  revealEls.forEach(el => revealObserver.observe(el));
+}else{
+  revealEls.forEach(el => el.classList.add('is-visible'));
+}
+
+const navToggle = document.getElementById('navToggle');
+const siteNav = document.getElementById('siteNav');
+if(navToggle && siteNav){
+  navToggle.addEventListener('click', () => {
+    const isOpen = siteNav.classList.toggle('is-open');
+    navToggle.classList.toggle('is-open', isOpen);
+    navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  });
+  siteNav.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => {
+      siteNav.classList.remove('is-open');
+      navToggle.classList.remove('is-open');
+      navToggle.setAttribute('aria-expanded', 'false');
+    });
+  });
+}
+
+const siteHeader = document.querySelector('.site-header');
+if(siteHeader){
+  const toggleHeaderShadow = () => {
+    siteHeader.classList.toggle('is-scrolled', window.scrollY > 8);
+  };
+  toggleHeaderShadow();
+  window.addEventListener('scroll', toggleHeaderShadow, { passive: true });
+}
+</script>
+
+</body>
+</html>
