@@ -251,7 +251,7 @@
   <div class="wrap">
     <div class="page-eyebrow">Serving Together</div>
     <h1>Our workers &amp; leaders, at a glance</h1>
-    <p class="lead">Photo, ministry, role, service start date, and training on record for every worker and leader at TGLCC — active or inactive.</p>
+    <p class="lead">Photo, ministry, role, service start date and training on record for every worker and leader at TGLCC — Active or Inactive.</p>
   </div>
 </section>
 
@@ -382,7 +382,7 @@ function joinNatural(list){
 function rolePhrase(row){
   const isWorker = row.worker === true;
   const isLeader = row.leader === true;
-  if(isWorker && isLeader) return 'both a Worker and a Leader';
+  if(isWorker && isLeader) return 'a Worker and a Leader';
   if(isLeader) return 'a Leader';
   return 'a Worker';
 }
@@ -390,22 +390,22 @@ function rolePhrase(row){
 function buildBio(row, isActive){
   const name = workerName(row);
   const ministry = pickField(row, ['ministry','ministry_name','department','role_ministry']);
-  const ministryPhrase = ministry ? `the ${ministry} ministry` : "the church's ministry team";
+  const ministryPhrase = ministry ? ` ${ministry} ` : "the church's ministry team";
   const started = formatDate(pickField(row, ['worker_since','leader_since','worker_start_date','leader_start_date','date_started_worker','date_started_leader','worker_date','commissioned_date','date_started']));
   const training = trainingListFrom(pickField(row, ['training','training_attained','trainings','courses_completed']));
 
   let sentence1;
   if(isActive){
     if(started){
-      sentence1 = `${name} has been part of ${ministryPhrase} since ${started}, currently serving as ${rolePhrase(row)}.`;
+      sentence1 = `${name} has been faithfully served as ${ministryPhrase} since ${started}, while also fulfilling the responsibilities of ${rolePhrase(row)}.`;
     } else {
       sentence1 = `${name} currently serves in ${ministryPhrase} as ${rolePhrase(row)}.`;
     }
   } else {
     if(started){
-      sentence1 = `${name} was part of ${ministryPhrase} since ${started} and served as ${rolePhrase(row)} during their time in the ministry.`;
+      sentence1 = `${name} has faithfully served as ${ministryPhrase} since ${started} and previously served as ${rolePhrase(row)}. `;
     } else {
-      sentence1 = `${name} was part of ${ministryPhrase} and served as ${rolePhrase(row)} during their time in the ministry.`;
+      sentence1 = `${name} has faithfully served as ${ministryPhrase} and previously served as ${rolePhrase(row)}. `;
     }
   }
 
