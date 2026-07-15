@@ -372,6 +372,86 @@
     .hero-actions{flex-direction:column;align-items:stretch;}
     .hero-actions .btn{text-align:center;}
   }
+
+  /* ---- workers/leaders auth gate ---- */
+  .auth-backdrop{
+    display:none;position:fixed;inset:0;z-index:1000;
+    background:rgba(24,22,18,0.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+    align-items:center;justify-content:center;padding:20px;
+    opacity:0;transition:opacity .25s ease;
+  }
+  .auth-backdrop.show{display:flex;opacity:1;}
+  .auth-modal{
+    background:var(--surface);border:1px solid var(--line);border-radius:22px;
+    max-width:380px;width:100%;padding:0 30px 30px;
+    box-shadow:0 30px 70px -25px rgba(38,47,112,0.45), 0 0 0 1px rgba(38,47,112,0.03);
+    text-align:center;position:relative;overflow:hidden;
+    transform:translateY(10px) scale(.97);opacity:0;
+    transition:transform .3s cubic-bezier(.22,1,.36,1), opacity .3s ease;
+  }
+  .auth-backdrop.show .auth-modal{transform:translateY(0) scale(1);opacity:1;}
+  .auth-modal-top{
+    height:6px;margin:0 -30px 28px;
+    background:linear-gradient(90deg, var(--green) 0%, var(--gold) 100%);
+  }
+  .auth-modal-close{
+    position:absolute;top:16px;right:16px;background:var(--paper);border:1px solid var(--line);
+    width:30px;height:30px;border-radius:50%;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--ink-soft);transition:background .2s ease,color .2s ease,transform .2s ease;
+  }
+  .auth-modal-close:hover{background:var(--red-tint);color:var(--red);transform:rotate(90deg);}
+  .auth-modal-close svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;}
+  .auth-lock{
+    width:56px;height:56px;border-radius:16px;
+    background:linear-gradient(155deg, var(--green) 0%, var(--green-dark) 100%);
+    box-shadow:0 10px 22px -10px rgba(38,47,112,0.55);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 16px;
+  }
+  .auth-lock svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+  .auth-modal h3{font-family:var(--font-display);font-weight:600;font-size:19px;margin:0 0 8px;letter-spacing:-0.01em;}
+  .auth-modal p{color:var(--ink-soft);font-size:13.5px;line-height:1.55;margin:0 0 22px;}
+  .auth-field{text-align:left;margin-bottom:10px;}
+  .auth-field label{
+    display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;
+    color:var(--ink-soft);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.04em;
+  }
+  .auth-field .input-wrap{position:relative;}
+  .auth-field .input-wrap svg{
+    position:absolute;left:12px;top:50%;transform:translateY(-50%);
+    width:16px;height:16px;stroke:var(--ink-faint);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;
+    pointer-events:none;transition:stroke .2s ease;
+  }
+  .auth-field input{
+    width:100%;padding:12px 14px 12px 38px;border:1.5px solid var(--line-strong);border-radius:12px;
+    background:var(--paper);font-family:var(--font-body);font-size:14.5px;color:var(--ink);
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .auth-field input:focus{
+    outline:none;border-color:var(--green);background:var(--surface);
+    box-shadow:0 0 0 4px var(--green-tint);
+  }
+  .auth-field input:focus + svg,
+  .auth-field .input-wrap:focus-within svg{stroke:var(--green);}
+  .auth-error{
+    display:none;align-items:flex-start;gap:8px;text-align:left;
+    color:var(--red);background:var(--red-tint);font-size:12.5px;font-weight:600;line-height:1.4;
+    padding:10px 12px;border-radius:10px;margin:4px 0 16px;
+  }
+  .auth-error svg{width:15px;height:15px;flex-shrink:0;margin-top:1px;stroke:var(--red);fill:none;stroke-width:2;}
+  .auth-error.show{display:flex;}
+  .auth-debug{
+    display:none;font-family:var(--font-mono);font-size:10.5px;color:var(--ink-faint);
+    text-align:left;line-height:1.5;margin:-8px 0 14px;word-break:break-word;
+  }
+  .auth-debug.show{display:block;}
+  .auth-modal .btn-block{
+    width:100%;padding:13px;border-radius:12px;font-size:14.5px;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    box-shadow:0 12px 24px -12px rgba(38,47,112,0.5);
+  }
+  .auth-modal .btn-block svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+  .auth-modal button[disabled]{opacity:0.6;cursor:not-allowed;transform:none !important;}
 </style>
 </head>
 <body>
@@ -390,7 +470,7 @@
       <a href="#features">Services</a>
       <a href="#structure">Our Ministries</a>
       <a href="#members">Insights</a>
-      <a href="tglccworkers.html">Meet our Team</a>
+      <a href="tglccworkers.html" id="workersNavLink" onclick="return openWorkersGate(event)">Those Who Serve</a>
       <a class="icon-link" href="TGLCC_Member_Database.html" title="Connect to the system" aria-label="Open system">
         <svg viewBox="0 0 24 24"><path d="M14 4.5h5.5V10"></path><path d="M19.3 4.7 11 13"></path><path d="M8.5 5.5H6A1.5 1.5 0 0 0 4.5 7v11A1.5 1.5 0 0 0 6 19.5h11a1.5 1.5 0 0 0 1.5-1.5v-2.5"></path></svg>
         <span class="icon-link-label">Open the System</span>
@@ -586,12 +666,156 @@
 
 <div class="app-footer">&copy; 2026 The Greatest Love of Christ Church. All Rights Reserved.<br>Developed by Lemuel Yrigan.</div>
 
+<div class="auth-backdrop" id="authBackdrop">
+  <div class="auth-modal">
+    <div class="auth-modal-top"></div>
+    <button type="button" class="auth-modal-close" onclick="closeWorkersGate()" aria-label="Close">
+      <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <div class="auth-lock">
+      <svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+    </div>
+    <h3>Workers &amp; Leaders Only</h3>
+    <p>This page is available only to authorized TGLCC Workers and Leaders.</p>
+    <form id="authForm" onsubmit="return false;">
+      <div class="auth-field">
+        <label for="authPassword">Access Password</label>
+        <div class="input-wrap">
+          <svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+          <input type="password" id="authPassword" placeholder="Enter password" autocomplete="off">
+        </div>
+      </div>
+      <div class="auth-error" id="authError">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <span>Incorrect password. Please contact the admin.</span>
+      </div>
+      <div class="auth-debug" id="authDebug"></div>
+      <button type="button" class="btn btn-primary btn-block" id="authLoginBtn" onclick="checkWorkersPassword()">
+        <svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
+        <span>Login</span>
+      </button>
+    </form>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL = 'https://vmbxnudsfsyknxekueqs.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZtYnhudWRzZnN5a254ZWt1ZXFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0MDU2MTIsImV4cCI6MjA5ODk4MTYxMn0.OS8hP5rFKoCQuZKzxKvGmyoTdD24UT1qlbVd2KAGUzo';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+/* ---- workers/leaders auth gate ---- */
+const WORKERS_DEST = 'tglccworkers.html';
+
+function openWorkersGate(e){
+  if(e) e.preventDefault();
+  const backdrop = document.getElementById('authBackdrop');
+  const pass = document.getElementById('authPassword');
+  const err = document.getElementById('authError');
+  const dbg = document.getElementById('authDebug');
+  err.classList.remove('show');
+  dbg.classList.remove('show');
+  dbg.textContent = '';
+  pass.value = '';
+  backdrop.classList.add('show');
+  setTimeout(() => pass.focus(), 50);
+  return false;
+}
+
+function closeWorkersGate(){
+  document.getElementById('authBackdrop').classList.remove('show');
+}
+
+function setAuthError(msg){
+  const err = document.getElementById('authError');
+  err.querySelector('span').textContent = msg;
+  err.classList.add('show');
+}
+
+function setAuthDebug(msg){
+  const dbg = document.getElementById('authDebug');
+  const debugMode = new URLSearchParams(window.location.search).get('debug') === '1';
+  if(debugMode){
+    dbg.textContent = msg;
+    dbg.classList.add('show');
+  }
+}
+
+async function checkWorkersPassword(){
+  const pass = document.getElementById('authPassword');
+  const err = document.getElementById('authError');
+  const btn = document.getElementById('authLoginBtn');
+  const btnLabel = btn.querySelector('span');
+  const entered = pass.value.trim();
+
+  err.classList.remove('show');
+
+  if(!entered){
+    setAuthError('Incorrect password. Please contact the admin.');
+    pass.focus();
+    return;
+  }
+
+  btn.disabled = true;
+  btnLabel.textContent = 'Checking…';
+
+  try{
+    // Pull every app_users row we're allowed to see, then filter and
+    // compare client-side. Filtering client-side (rather than with
+    // .eq()/.ilike() in the query) rules out mismatches caused by
+    // exact-case column values, and querying with no filter at all
+    // tells us immediately whether Row Level Security is blocking
+    // the anon key from reading the table in the first place.
+    const { data, error } = await supabaseClient
+      .from('app_users')
+      .select('id, role, password');
+
+    if(error) throw error;
+
+    const allRows = data || [];
+    const workerRows = allRows.filter(r => String(r.role ?? '').trim().toLowerCase() === 'worker');
+    const match = workerRows.some(r => String(r.password ?? '').trim() === entered);
+
+    console.log('[workers gate] total app_users rows visible to anon key:', allRows.length);
+    console.log('[workers gate] rows with role=worker:', workerRows.length, workerRows.map(r => r.id));
+
+    setAuthDebug(
+      `debug — rows visible: ${allRows.length} · worker rows: ${workerRows.length} · ` +
+      `roles seen: ${[...new Set(allRows.map(r => r.role))].join(', ') || 'none'}`
+    );
+
+    if(match){
+      err.classList.remove('show');
+      window.location.href = WORKERS_DEST;
+    } else {
+      setAuthError('Incorrect password. Please contact the admin.');
+      pass.focus();
+      pass.select();
+    }
+  }catch(e){
+    // A permission error here means Row Level Security on app_users is
+    // blocking the anon key from reading the table at all — no query
+    // shape will fix that from the client; the RLS policy needs to
+    // allow SELECT for the anon role.
+    console.error('[workers gate] Supabase check failed:', e);
+    setAuthDebug(`debug — query error: ${e.message || e.code || e}`);
+    setAuthError('Incorrect password. Please contact the admin.');
+  }finally{
+    btn.disabled = false;
+    btnLabel.textContent = 'Login';
+  }
+}
+
+document.getElementById('authPassword').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') checkWorkersPassword();
+});
+document.getElementById('authBackdrop').addEventListener('click', (e) => {
+  if(e.target.id === 'authBackdrop') closeWorkersGate();
+});
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape') closeWorkersGate();
+});
 
 async function loadMemberStats(){
   try{
