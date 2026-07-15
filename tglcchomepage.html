@@ -769,7 +769,7 @@ async function checkWorkersPassword(){
     // the anon key from reading the table in the first place.
     const { data, error } = await supabaseClient
       .from('app_users')
-      .select('id, role, password');
+      .select('role, password');
 
     if(error) throw error;
 
@@ -778,7 +778,7 @@ async function checkWorkersPassword(){
     const match = workerRows.some(r => String(r.password ?? '').trim() === entered);
 
     console.log('[workers gate] total app_users rows visible to anon key:', allRows.length);
-    console.log('[workers gate] rows with role=worker:', workerRows.length, workerRows.map(r => r.id));
+    console.log('[workers gate] rows with role=worker:', workerRows.length);
 
     setAuthDebug(
       `debug — rows visible: ${allRows.length} · worker rows: ${workerRows.length} · ` +
