@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TGLCC Attendance Record</title>
+<title>TGLCC Attendance — Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -31,152 +31,78 @@
   }
   *{box-sizing:border-box;}
   html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
-  body{
-    margin:0;color:var(--ink);font-family:var(--font-body);-webkit-font-smoothing:antialiased;
-    background:
-      radial-gradient(680px 420px at 100% -8%, var(--green-tint) 0%, rgba(232,236,251,0) 70%),
-      radial-gradient(560px 360px at -8% 0%, var(--gold-tint) 0%, rgba(251,240,218,0) 70%),
-      var(--paper);
-    min-height:100vh;overflow-x:hidden;-webkit-tap-highlight-color:transparent;
-  }
-  .app{max-width:760px;margin:0 auto;padding:28px 24px 80px;}
-  button, a, .member-row, input{touch-action:manipulation;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-body);-webkit-font-smoothing:antialiased;overflow-x:hidden;-webkit-tap-highlight-color:transparent;}
+  .app{max-width:520px;margin:0 auto;padding:28px 24px 80px;}
+  button, a, input{touch-action:manipulation;}
   img{max-width:100%;}
 
-  /* ---- header ---- */
   .masthead{
-    border-bottom:2px solid var(--ink);padding-bottom:16px;margin-bottom:22px;
-    display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px;
+    border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:24px;
+    display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;
   }
   .masthead-left{display:flex;align-items:center;gap:14px;}
   .masthead-logo{width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0;}
   .church-name{font-family:var(--font-mono);font-size:11.5px;text-transform:uppercase;letter-spacing:0.04em;color:var(--green-dark);margin:0 0 2px;}
-  .masthead h1{font-family:var(--font-display);font-weight:600;font-size:24px;margin:0;letter-spacing:-0.01em;}
-  .masthead-right{text-align:right;}
-  .today-date{
-    font-family:var(--font-mono);font-size:14px;font-weight:400;color:var(--ink);
-    display:flex;align-items:center;gap:6px;justify-content:flex-end;white-space:nowrap;
+  .masthead h1{font-family:var(--font-display);font-weight:600;font-size:22px;margin:0;letter-spacing:-0.01em;}
+
+  .duration-grid{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;}
+  .duration-btn{
+    padding:9px 15px;border:1px solid var(--line-strong);border-radius:20px;
+    background:var(--surface);color:var(--ink-soft);font-size:13.5px;font-weight:600;
   }
-  .today-greeting{font-size:13px;color:var(--ink-soft);margin-top:4px;}
+  .duration-btn:hover{background:var(--paper);}
+  .duration-btn.active{background:var(--green);color:#fff;border-color:var(--green);}
+
+  .countdown{font-family:var(--font-mono);font-weight:600;color:var(--green-dark);}
 
   button{font-family:var(--font-body);cursor:pointer;}
   .btn{
-    padding:9px 14px;border-radius:var(--radius);border:1px solid var(--line-strong);
+    padding:11px 16px;border-radius:var(--radius);border:1px solid var(--line-strong);
     background:var(--surface);color:var(--ink);font-size:14px;font-weight:600;white-space:nowrap;
-    text-decoration:none;display:inline-flex;align-items:center;justify-content:center;
+    display:inline-flex;align-items:center;justify-content:center;
   }
   .btn:hover{background:var(--paper);}
   .btn-primary{background:var(--green);color:#fff;border-color:var(--green);}
   .btn-primary:hover{background:var(--green-dark);}
+  .btn-danger{background:var(--red);color:#fff;border-color:var(--red);}
+  .btn-danger:hover{background:#7e2f2f;}
   .btn-ghost{background:transparent;border-color:transparent;color:var(--ink-soft);}
   .btn-ghost:hover{color:var(--ink);}
   .btn-block{width:100%;padding:13px;font-size:15px;}
   .btn[disabled]{opacity:0.5;cursor:not-allowed;}
 
-  /* ---- toolbar: date pill (left) + new member (right) ---- */
-  .toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:18px;}
-
-  .date-pill{
-    position:relative;display:flex;align-items:center;gap:6px;
-    background:var(--surface);border:1px solid var(--line);border-radius:14px;
-    padding:11px 18px;box-shadow:0 2px 8px rgba(41,38,32,0.04);
-  }
-  #dateLabel{font-weight:700;font-size:16px;color:var(--ink);}
-  .date-pill-chevron{font-size:11px;color:var(--ink-faint);}
-  .date-pill input[type="date"]{
-    position:absolute;inset:0;opacity:0;border:none;padding:0;margin:0;width:100%;height:100%;cursor:pointer;
-  }
-  .date-pill input[type="date"][disabled]{cursor:default;}
-
-  input[type="date"]{font-family:var(--font-body);font-size:16px;color:var(--ink);}
-  input:focus{outline:none;}
-  .search{
-    padding:9px 12px;border:1px solid var(--line-strong);border-radius:var(--radius);
-    background:var(--surface);font-family:var(--font-body);font-size:16px;color:var(--ink);
-    flex:1;min-width:160px;width:100%;
-  }
-  .search:focus{border-color:var(--green);}
-
-  /* ---- verse ---- */
-  .verse-card{
-    background:var(--green-tint);border:1px solid var(--line);border-radius:14px;
-    padding:14px 18px;margin-bottom:18px;display:flex;gap:10px;align-items:flex-start;
-    font-size:14.5px;color:var(--green-dark);font-style:italic;line-height:1.6;
-  }
-  .verse-card .quote-mark{font-family:var(--font-display);font-style:normal;font-size:24px;line-height:0.8;color:var(--green);flex-shrink:0;margin-top:2px;}
-
-  /* ---- status pill ---- */
-  .status-pill{
-    display:inline-flex;align-items:center;gap:7px;padding:6px 14px;border-radius:20px;
-    font-family:var(--font-mono);font-size:11.5px;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;
-  }
-  .status-pill.pending{background:var(--gold-tint);color:var(--gold);}
-  .status-pill.active{background:var(--green-tint);color:var(--green-dark);}
-  .status-dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0;}
-  .status-dot.pulse{animation:statusPulse 1.6s ease-in-out infinite;}
-  @keyframes statusPulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
-
-  /* ---- closed / hero state ---- */
-  .hero-card{
-    background:var(--surface);border:1px solid var(--line);border-radius:20px;
-    padding:44px 24px;margin-bottom:20px;text-align:center;
-  }
-  .hero-card h2{font-family:var(--font-display);font-weight:700;font-size:27px;margin:18px 0 8px;letter-spacing:-0.01em;}
-  .hero-card p{color:var(--ink-soft);font-size:14.5px;margin:0 auto;max-width:400px;line-height:1.65;}
-  .hero-card .service-time{
-    display:inline-block;margin-top:16px;font-family:var(--font-mono);font-size:13px;font-weight:600;
-    color:var(--green-dark);background:var(--green-tint);border-radius:20px;padding:6px 16px;
-  }
-
-  /* ---- open session bar ---- */
-  .session-bar{
+  .card{
     background:var(--surface);border:1px solid var(--line);border-radius:16px;
-    padding:18px 20px;margin-bottom:20px;
+    padding:24px 22px;margin-bottom:18px;
   }
-  .session-stats{display:flex;gap:24px;flex-wrap:wrap;margin-top:14px;}
-  .stat-item{flex:1;min-width:110px;}
-  .stat-item .stat-label{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--ink-soft);margin-bottom:3px;}
-  .stat-item .stat-value{font-size:16px;font-weight:700;color:var(--ink);}
-  .stat-item .stat-value.countdown{font-family:var(--font-mono);color:var(--green-dark);}
+  .card h2{font-family:var(--font-display);font-weight:600;font-size:17px;margin:0 0 4px;}
+  .card .card-sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:18px;line-height:1.5;}
 
-  .search-wrap{margin-bottom:8px;}
-  .search-hint{font-size:13px;color:var(--ink-soft);margin:8px 2px 18px;line-height:1.55;}
-
-  .results-wrap{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);overflow:hidden;margin-bottom:18px;}
-  .member-row{
-    display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line);
-    cursor:pointer;user-select:none;
+  label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.03em;margin-bottom:6px;}
+  input[type="date"], input[type="number"]{
+    width:100%;padding:10px 12px;border:1px solid var(--line-strong);border-radius:var(--radius);
+    background:var(--surface);font-family:var(--font-body);font-size:16px;color:var(--ink);margin-bottom:14px;
   }
-  .member-row:last-child{border-bottom:none;}
-  .member-row:hover{background:var(--paper);}
-  .member-row .m-no{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-faint);width:34px;flex-shrink:0;}
-  .member-row .m-name{font-size:14.5px;font-weight:600;flex:1;}
-  .member-row .m-go{font-size:12px;font-family:var(--font-mono);color:var(--green-dark);font-weight:700;}
+  input:focus{outline:none;border-color:var(--green);}
+  .field-row{display:flex;gap:12px;}
+  .field-row > div{flex:1;}
 
-  .confirm-card{
-    background:var(--green-tint);border:1px solid var(--green);border-radius:16px;
-    padding:20px;margin-bottom:18px;text-align:center;
+  /* PIN entry */
+  .pin-wrap{text-align:center;padding:20px 0 8px;}
+  .pin-wrap p{color:var(--ink-soft);font-size:13.5px;margin-bottom:22px;}
+  .pin-boxes{display:flex;gap:8px;justify-content:center;margin-bottom:20px;max-width:340px;margin-left:auto;margin-right:auto;}
+  .pin-box{
+    flex:1 1 0;min-width:0;max-width:44px;height:52px;border:1px solid var(--line-strong);border-radius:var(--radius);
+    background:var(--surface);font-family:var(--font-mono);font-size:22px;text-align:center;color:var(--ink);
   }
-  .confirm-card .c-label{font-size:12px;color:var(--green-dark);font-weight:600;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:6px;}
-  .confirm-card .c-name{font-family:var(--font-display);font-weight:700;font-size:22px;color:var(--ink);margin-bottom:2px;}
-  .confirm-card .c-no{font-family:var(--font-mono);font-size:12px;color:var(--ink-soft);margin-bottom:18px;}
-  .confirm-actions{display:flex;gap:10px;justify-content:center;}
+  .pin-box:focus{outline:none;border-color:var(--green);}
 
-  .empty-state{padding:50px 20px;text-align:center;color:var(--ink-soft);}
-  .empty-state h3{font-family:var(--font-display);font-weight:500;color:var(--ink);margin-bottom:6px;}
-
-  .success-card{
-    background:var(--surface);border:1px solid var(--line);border-radius:16px;
-    padding:28px 20px;margin-bottom:18px;text-align:center;
-  }
-  .success-check{
-    width:52px;height:52px;border-radius:50%;background:var(--green-tint);color:var(--green-dark);
-    display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 14px;
-  }
-  .success-card h3{font-family:var(--font-display);font-weight:600;font-size:19px;margin:0 0 4px;}
-  .success-card p{color:var(--ink-soft);font-size:13px;margin:0;}
-
-  .hint{font-size:12.5px;color:var(--ink-soft);margin-bottom:16px;line-height:1.5;}
+  .status-row{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+  .status-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .status-dot.on{background:var(--green);}
+  .status-dot.off{background:var(--ink-faint);}
+  .status-text{font-weight:600;font-size:14.5px;}
+  .status-detail{font-size:12.5px;color:var(--ink-soft);margin-left:19px;line-height:1.6;}
 
   .banner{
     display:none;padding:12px 16px;border-radius:var(--radius);margin-bottom:16px;
@@ -193,28 +119,25 @@
   }
   .toast.show{opacity:1;transform:translateY(-4px);}
 
+  .divider{border:none;border-top:1px solid var(--line);margin:18px 0;}
+  .hint{font-size:12px;color:var(--ink-faint);line-height:1.5;margin-top:-6px;margin-bottom:14px;}
+
   .app-footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line);text-align:center;font-family:var(--font-mono);font-size:11.5px;color:var(--ink-faint);line-height:1.6;}
   .app-footer a{color:var(--ink-faint);}
 
   /* ---- mobile tuning ---- */
   @media (max-width:480px){
     .app{padding:20px 16px 64px;}
-    .masthead{gap:10px;}
-    .masthead h1{font-size:20px;}
+    .masthead h1{font-size:19px;}
     .masthead-logo{width:44px;height:44px;}
-    .masthead-right{text-align:left;width:100%;}
-    .today-date{justify-content:flex-start;}
-    .toolbar{gap:10px;}
-    .date-pill{padding:10px 14px;flex:1;justify-content:center;}
-    .btn-primary[href]{flex:1;text-align:center;}
-    .verse-card{font-size:14px;padding:12px 14px;}
-    .session-stats{gap:16px;}
-    .hero-card{padding:32px 18px;}
-    .hero-card h2{font-size:22px;}
+    .card{padding:20px 16px;}
+    .pin-box{height:48px;font-size:20px;}
+    .duration-grid{gap:6px;}
+    .duration-btn{padding:8px 12px;font-size:13px;}
   }
-  @media (max-width:360px){
-    .masthead h1{font-size:18px;}
-    .church-name{font-size:10.5px;}
+  @media (max-width:340px){
+    .pin-boxes{gap:6px;}
+    .pin-box{max-width:38px;}
   }
 </style>
 </head>
@@ -226,36 +149,16 @@
       <img class="masthead-logo" src="data:image/jpeg;base64,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" alt="Church logo">
       <div>
         <div class="church-name">The Greatest Love of Christ Church</div>
-        <h1>Attendance Record</h1>
+        <h1 id="pageTitle">Admin Login</h1>
       </div>
     </div>
-    <div class="masthead-right">
-      <div class="today-date"><span id="todayLabel"></span></div>
-      <div class="today-greeting">God bless you today! ♥</div>
-    </div>
   </div>
 
-  <div class="banner" id="dataBanner"></div>
+  <div class="banner" id="banner"></div>
 
-  <div class="toolbar">
-    <div class="date-pill">
-      <span id="dateLabel"></span>
-      <span class="date-pill-chevron" id="dateChevron">▾</span>
-      <input type="date" id="attendanceDate" onchange="onDateChange()">
-    </div>
-    <a class="btn btn-primary" href="./TGLCC_New_Member_Registration.html" target="_blank">+ New Member</a>
-  </div>
+  <div id="content"></div>
 
-  <div class="verse-card">
-    <span class="quote-mark">&ldquo;</span>
-    <span>I was glad when they said to me, &lsquo;Let us go to the house of the Lord.&rsquo; &mdash; Psalm 122:1</span>
-  </div>
-
-  <div id="sessionBar"></div>
-
-  <div id="checkinFlow"></div>
-
-  <div class="app-footer">&copy; 2026 The Greatest Love of Christ Church. All Rights Reserved.<br>Developed by Lemuel Yrigan.<br><a href="./TGLCC_Admin.html" target="_blank">Admin</a></div>
+  <div class="app-footer">&copy; 2026 The Greatest Love of Christ Church. All Rights Reserved.<br>Developed by Lemuel Yrigan.<br><a href="./TGLCC_Attendance_Record.html">&larr; Back to Attendance Record</a></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -267,82 +170,20 @@ const SUPABASE_URL = 'https://vmbxnudsfsyknxekueqs.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZtYnhudWRzZnN5a254ZWt1ZXFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0MDU2MTIsImV4cCI6MjA5ODk4MTYxMn0.OS8hP5rFKoCQuZKzxKvGmyoTdD24UT1qlbVd2KAGUzo';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let members = [];            // active members: {id, member_no, name}
-let checkedInIds = new Set(); // member ids already checked in for currentDate
-let currentDate = todayStr();
-let selectedMember = null;    // member picked from search results, awaiting confirm
-
-// ---- Admin-controlled attendance session (app_config table) ----
-// If the app_config table doesn't exist yet, or the row can't be read,
-// the app falls back to its original always-open behavior so existing
-// setups keep working exactly as before.
-let sessionConfig = null;     // {attendance_active, attendance_date, session_end_at, session_started_at} or null
-let hasConfigTable = true;    // becomes false if app_config is missing/unreadable
-let hasStartedAtColumn = true; // becomes false if session_started_at hasn't been added to app_config yet
-let countdownTicker = null;   // live "auto-ends in" ticker, ticks every second while a session is open
-
-function sessionIsOpen(){
-  if(!hasConfigTable || !sessionConfig) return true; // fallback: always open
-  if(!sessionConfig.attendance_active) return false;
-  if(sessionConfig.session_end_at && new Date(sessionConfig.session_end_at).getTime() <= Date.now()) return false;
-  return true;
-}
-
-async function loadSessionConfig(){
-  // Try with session_started_at first (used to show the "Started" time);
-  // if that column doesn't exist yet in this church's Supabase project,
-  // fall back to the original columns so the app still works.
-  if(hasStartedAtColumn){
-    try{
-      const { data, error } = await supabaseClient
-        .from('app_config')
-        .select('attendance_active,attendance_date,session_end_at,session_started_at')
-        .eq('id', 1)
-        .single();
-      if(error) throw error;
-      sessionConfig = data;
-      hasConfigTable = true;
-      return;
-    }catch(e){
-      hasStartedAtColumn = false; // don't keep retrying the wider select every poll
-    }
-  }
-  try{
-    const { data, error } = await supabaseClient
-      .from('app_config')
-      .select('attendance_active,attendance_date,session_end_at')
-      .eq('id', 1)
-      .single();
-    if(error) throw error;
-    sessionConfig = data;
-    hasConfigTable = true;
-  }catch(e){
-    // Table not present, no row yet, or unreachable — behave like the
-    // original app (attendance always open, date picker fully manual).
-    hasConfigTable = false;
-    sessionConfig = null;
-  }
-}
-
-// If a session was open but its auto-end time has passed, flip it closed
-// in the database too (best-effort; ignored if it fails).
-async function autoCloseIfExpired(){
-  if(!hasConfigTable || !sessionConfig) return;
-  if(sessionConfig.attendance_active && sessionConfig.session_end_at &&
-     new Date(sessionConfig.session_end_at).getTime() <= Date.now()){
-    try{
-      await supabaseClient.from('app_config').update({ attendance_active:false }).eq('id', 1);
-    }catch(e){ /* ignore */ }
-  }
-}
+const SESSION_KEY = 'tglcc_admin_authed'; // sessionStorage flag only — cleared on tab close / logout
+let config = null;   // current app_config row
+let pollTimer = null;
+let countdownTimer = null;
+let selectedDurationHours = 0; // 0 = no auto-end (manual)
 
 function todayStr(){
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 
-function escapeHtml(s){
-  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function fmtDateLabel(dateStr){
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
 }
 
 function toast(msg){
@@ -353,20 +194,122 @@ function toast(msg){
 }
 
 function showBanner(tone, text){
-  const el = $('dataBanner');
+  const el = $('banner');
   el.className = 'banner show ' + tone;
   el.textContent = text;
 }
-function hideBanner(){ $('dataBanner').className = 'banner'; }
+function hideBanner(){ $('banner').className = 'banner'; }
 
-function fmtDateLabel(dateStr){
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+// ---- PIN hashing (SHA-256, hex) — the PIN itself is never stored or
+// hardcoded here; only its hash is compared against app_config.pin_hash,
+// which is fetched fresh from Supabase on every login attempt. ----
+async function sha256Hex(text){
+  const enc = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 
-function fmtTimeLabel(iso){
-  if(!iso) return null;
-  return new Date(iso).toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
+let hasStartedAtColumn = true; // becomes false if session_started_at hasn't been added to app_config yet
+
+async function fetchConfig(){
+  if(hasStartedAtColumn){
+    try{
+      const { data, error } = await supabaseClient
+        .from('app_config')
+        .select('pin_hash,attendance_active,attendance_date,session_end_at,session_started_at')
+        .eq('id', 1)
+        .single();
+      if(error) throw error;
+      return data;
+    }catch(e){
+      hasStartedAtColumn = false; // column not present yet — fall back below
+    }
+  }
+  const { data, error } = await supabaseClient
+    .from('app_config')
+    .select('pin_hash,attendance_active,attendance_date,session_end_at')
+    .eq('id', 1)
+    .single();
+  if(error) throw error;
+  return data;
+}
+
+// ================= PIN LOGIN SCREEN =================
+function renderLogin(){
+  $('pageTitle').textContent = 'Admin Login';
+  hideBanner();
+  $('content').innerHTML = `
+    <div class="card">
+      <div class="pin-wrap">
+        <p>Enter the 6-digit admin PIN to continue.</p>
+        <div class="pin-boxes">
+          ${[0,1,2,3,4,5].map(i => `<input class="pin-box" id="pin${i}" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="1" autocomplete="off">`).join('')}
+        </div>
+        <button class="btn btn-primary btn-block" id="loginBtn" onclick="attemptLogin()">Unlock Admin Panel</button>
+      </div>
+    </div>
+  `;
+
+  const boxes = [0,1,2,3,4,5].map(i => $('pin'+i));
+  boxes.forEach((box, idx) => {
+    box.addEventListener('input', () => {
+      box.value = box.value.replace(/[^0-9]/g, '').slice(0,1);
+      if(box.value && idx < 5) boxes[idx+1].focus();
+    });
+    box.addEventListener('keydown', (e) => {
+      if(e.key === 'Backspace' && !box.value && idx > 0) boxes[idx-1].focus();
+      if(e.key === 'Enter') attemptLogin();
+    });
+  });
+  boxes[0].focus();
+}
+
+async function attemptLogin(){
+  const boxes = [0,1,2,3,4,5].map(i => $('pin'+i));
+  const pin = boxes.map(b => b.value).join('');
+  if(pin.length !== 6){
+    showBanner('error', 'Please enter all 6 digits of the PIN.');
+    return;
+  }
+  const btn = $('loginBtn');
+  btn.disabled = true;
+  btn.textContent = 'Checking…';
+
+  try{
+    const row = await fetchConfig();
+    const enteredHash = await sha256Hex(pin);
+    if(enteredHash === row.pin_hash){
+      sessionStorage.setItem(SESSION_KEY, '1');
+      config = row;
+      hideBanner();
+      renderAdminPanel();
+    }else{
+      showBanner('error', 'Incorrect PIN. Please try again.');
+      boxes.forEach(b => b.value = '');
+      boxes[0].focus();
+      btn.disabled = false;
+      btn.textContent = 'Unlock Admin Panel';
+    }
+  }catch(e){
+    console.error('Login failed:', e);
+    showBanner('error', 'Could not verify PIN — check that the "app_config" table exists in Supabase and is reachable.');
+    btn.disabled = false;
+    btn.textContent = 'Unlock Admin Panel';
+  }
+}
+
+function logout(){
+  sessionStorage.removeItem(SESSION_KEY);
+  if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+  if(countdownTimer){ clearInterval(countdownTimer); countdownTimer = null; }
+  renderLogin();
+}
+
+// ================= ADMIN PANEL =================
+function sessionIsOpen(cfg){
+  if(!cfg || !cfg.attendance_active) return false;
+  if(cfg.session_end_at && new Date(cfg.session_end_at).getTime() <= Date.now()) return false;
+  return true;
 }
 
 function formatCountdown(ms){
@@ -380,292 +323,167 @@ function formatCountdown(ms){
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
-// ---- Live "Auto-ends in" countdown, mirrors the one on TGLCC_Admin.html ----
 function startCountdownTicker(){
-  if(countdownTicker){ clearInterval(countdownTicker); countdownTicker = null; }
-  countdownTicker = setInterval(() => {
-    const el = $('sessionCountdown');
-    if(!el || !sessionConfig || !sessionConfig.session_end_at){
-      clearInterval(countdownTicker); countdownTicker = null;
-      return;
-    }
-    const ms = new Date(sessionConfig.session_end_at).getTime() - Date.now();
+  if(countdownTimer){ clearInterval(countdownTimer); countdownTimer = null; }
+  countdownTimer = setInterval(() => {
+    const el = $('countdownText');
+    if(!el || !config || !config.session_end_at){ clearInterval(countdownTimer); countdownTimer = null; return; }
+    const ms = new Date(config.session_end_at).getTime() - Date.now();
     if(ms <= 0){
       el.textContent = '00:00';
-      clearInterval(countdownTicker); countdownTicker = null;
-      refreshSessionState();
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+      refreshStatusOnly();
       return;
     }
     el.textContent = formatCountdown(ms);
   }, 1000);
 }
 
-// ---- Renders either the "not started yet" hero, or the live session
-// info strip (Attendance Date / Started / Auto-ends countdown) ----
-function renderSessionBar(open){
-  const bar = $('sessionBar');
-  if(!bar) return;
+async function renderAdminPanel(){
+  $('pageTitle').textContent = 'Admin Panel';
+  const open = sessionIsOpen(config);
 
-  if(!open){
-    if(countdownTicker){ clearInterval(countdownTicker); countdownTicker = null; }
-    bar.innerHTML = `
-      <div class="hero-card">
-        <span class="status-pill pending"><span class="status-dot"></span>Service hasn't started yet</span>
-        <h2>We're getting ready!</h2>
-        <p>Attendance for today's service is not open yet. Please wait while our admin prepares everything.</p>
-        <div class="service-time">Service starts at 10:30 AM</div>
+  const statusDetail = open
+    ? (config.session_end_at
+        ? `Auto-ends in <span class="countdown" id="countdownText">${formatCountdown(new Date(config.session_end_at).getTime() - Date.now())}</span>`
+        : 'No auto-end time set — must be ended manually.')
+    : 'Members cannot check in until attendance is started.';
+
+  $('content').innerHTML = `
+    <div class="card">
+      <div class="status-row">
+        <span class="status-dot ${open ? 'on' : 'off'}"></span>
+        <span class="status-text">Attendance is currently ${open ? 'ACTIVE' : 'INACTIVE'}</span>
       </div>
-    `;
-    return;
-  }
-
-  const startedLabel = hasStartedAtColumn ? fmtTimeLabel(sessionConfig && sessionConfig.session_started_at) : null;
-  const hasEnd = !!(sessionConfig && sessionConfig.session_end_at);
-  const endMs = hasEnd ? (new Date(sessionConfig.session_end_at).getTime() - Date.now()) : null;
-
-  bar.innerHTML = `
-    <div class="session-bar">
-      <span class="status-pill active"><span class="status-dot pulse"></span>Attendance is Open</span>
-      <div class="session-stats">
-        <div class="stat-item">
-          <div class="stat-label">Attendance Date</div>
-          <div class="stat-value">${fmtDateLabel(currentDate)}</div>
-        </div>
-        ${startedLabel ? `
-        <div class="stat-item">
-          <div class="stat-label">Started</div>
-          <div class="stat-value">${startedLabel}</div>
-        </div>` : ''}
-        <div class="stat-item">
-          <div class="stat-label">${hasEnd ? 'Auto-ends in' : 'Ends'}</div>
-          <div class="stat-value countdown" id="sessionCountdown">${hasEnd ? formatCountdown(endMs) : 'Manually'}</div>
-        </div>
+      <div class="status-detail">
+        Date: <span id="dateDisplay">${fmtDateLabel(todayStr())}</span> (automatic — today's date)<br>
+        ${statusDetail}
       </div>
     </div>
+
+    <div class="card">
+      <h2>Start Attendance</h2>
+      <div class="card-sub">Opens check-in for members. Optionally set an auto-end duration.</div>
+      <label>Auto-end after — optional</label>
+      <div class="duration-grid" id="durationGrid">
+        <button type="button" class="duration-btn ${selectedDurationHours === 0 ? 'active' : ''}" data-hours="0">Manual</button>
+        ${[1,2,3,4,5,6].map(h => `<button type="button" class="duration-btn ${selectedDurationHours === h ? 'active' : ''}" data-hours="${h}">${h}h</button>`).join('')}
+      </div>
+      <div class="hint">Choose how many hours attendance stays open before it closes automatically.</div>
+      <button class="btn btn-primary btn-block" id="startBtn" onclick="startAttendance()">Start Attendance</button>
+    </div>
+
+    <div class="card">
+      <h2>End Attendance</h2>
+      <div class="card-sub">Immediately closes check-in for all members.</div>
+      <button class="btn btn-danger btn-block" id="endBtn" onclick="endAttendance()" ${open ? '' : 'disabled'}>End Attendance Now</button>
+    </div>
+
+    <hr class="divider">
+    <button class="btn btn-ghost btn-block" onclick="logout()">Logout Admin</button>
   `;
 
-  if(hasEnd) startCountdownTicker();
+  document.querySelectorAll('#durationGrid .duration-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedDurationHours = parseInt(btn.dataset.hours, 10);
+      document.querySelectorAll('#durationGrid .duration-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  if(pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(refreshStatusOnly, 10000);
+
+  if(open && config.session_end_at){
+    startCountdownTicker();
+  }else if(countdownTimer){
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
 }
 
-// ---- Load active members (id, member_no, name) straight from the same
-// Supabase "members" table the Member Database app writes to.
-async function loadMembers(){
+async function refreshStatusOnly(){
   try{
-    const { data, error } = await supabaseClient
-      .from('members')
-      .select('id,member_no,name,active')
-      .eq('active', true)
-      .order('name', { ascending: true });
+    config = await fetchConfig();
+  }catch(e){ return; }
+  // Auto-close if the end time has passed
+  if(config.attendance_active && config.session_end_at && new Date(config.session_end_at).getTime() <= Date.now()){
+    try{
+      const payload = { attendance_active:false, session_end_at:null };
+      if(hasStartedAtColumn) payload.session_started_at = null;
+      await supabaseClient.from('app_config').update(payload).eq('id', 1);
+      config.attendance_active = false;
+    }catch(e){ /* ignore */ }
+  }
+  renderAdminPanel();
+}
+
+async function startAttendance(){
+  const btn = $('startBtn');
+  const date = todayStr();
+  const sessionEndAt = (selectedDurationHours && selectedDurationHours > 0)
+    ? new Date(Date.now() + selectedDurationHours * 3600000).toISOString()
+    : null;
+
+  btn.disabled = true;
+  btn.textContent = 'Starting…';
+  const payload = { attendance_active:true, attendance_date:date, session_end_at:sessionEndAt };
+  if(hasStartedAtColumn) payload.session_started_at = new Date().toISOString();
+  try{
+    const { error } = await supabaseClient
+      .from('app_config')
+      .update(payload)
+      .eq('id', 1);
     if(error) throw error;
-    members = data || [];
-    hideBanner();
+    toast('✓ Attendance started');
+    await refreshStatusOnly();
   }catch(e){
-    console.error('Failed to load members:', e);
-    members = [];
-    showBanner('error', 'Could not load members from Supabase. Check your internet connection.');
+    console.error(e);
+    showBanner('error', 'Could not start attendance — check your connection and the "app_config" table.');
+    btn.disabled = false;
+    btn.textContent = 'Start Attendance';
   }
 }
 
-// ---- Who has already checked in for currentDate, from the relational
-// attendance_records table (one row per member per date, linked to
-// members.id via a foreign key). ----
-async function loadCheckedInForDate(){
-  checkedInIds = new Set();
+async function endAttendance(){
+  const btn = $('endBtn');
+  btn.disabled = true;
+  btn.textContent = 'Ending…';
+  const payload = { attendance_active:false, session_end_at:null };
+  if(hasStartedAtColumn) payload.session_started_at = null;
   try{
-    const { data, error } = await supabaseClient
-      .from('attendance_records')
-      .select('member_id')
-      .eq('attendance_date', currentDate);
+    const { error } = await supabaseClient
+      .from('app_config')
+      .update(payload)
+      .eq('id', 1);
     if(error) throw error;
-    checkedInIds = new Set((data || []).map(r => r.member_id));
+    toast('Attendance ended');
+    await refreshStatusOnly();
   }catch(e){
-    console.error('Failed to load attendance for date:', e);
-    showBanner('error', 'Could not load today\'s church-ins. The "attendance_records" table may not be set up yet.');
+    console.error(e);
+    showBanner('error', 'Could not end attendance — check your connection.');
+    btn.disabled = false;
+    btn.textContent = 'End Attendance Now';
   }
 }
 
-async function onDateChange(){
-  if(hasConfigTable) return; // date is admin-controlled once app_config is set up
-  currentDate = $('attendanceDate').value || todayStr();
-  $('dateLabel').textContent = "Welcome! We're glad you're here.";
-  clearSelection();
-  await loadCheckedInForDate();
-  renderMatches();
-}
-
-// ---- Search / select / confirm flow ----
-function renderMatches(){
-  const q = ($('searchBox').value || '').trim().toLowerCase();
-  $('resultsBox').style.display = 'none';
-  $('emptyState').style.display = 'none';
-
-  if(!q){ return; }
-
-  const list = members
-    .filter(m => !checkedInIds.has(m.id))
-    .filter(m => {
-      const name = (m.name||'').toLowerCase();
-      const no = String(m.member_no||'');
-      return name.includes(q) || no.includes(q);
-    })
-    .sort((a,b)=>(a.name||'').localeCompare(b.name||''))
-    .slice(0, 8);
-
-  if(!list.length){
-    $('emptyState').style.display = '';
-    return;
-  }
-
-  const box = $('resultsBox');
-  box.style.display = '';
-  box.innerHTML = list.map(m => `
-    <div class="member-row" onclick="selectMember('${m.id}')">
-      <span class="m-no">${m.member_no ? '#' + m.member_no : ''}</span>
-      <span class="m-name">${escapeHtml(m.name)}</span>
-      <span class="m-go">SELECT →</span>
-    </div>
-  `).join('');
-}
-
-function selectMember(id){
-  const m = members.find(x=>x.id===id);
-  if(!m) return;
-  selectedMember = m;
-  $('searchBox').value = '';
-  $('resultsBox').style.display = 'none';
-  $('emptyState').style.display = 'none';
-  $('checkinFlow').innerHTML = `
-    <div class="confirm-card">
-      <div class="c-label">Confirm your attendance</div>
-      <div class="c-name">${escapeHtml(m.name)}</div>
-      <div class="c-no">${m.member_no ? 'Member No. ' + m.member_no : ''} · ${fmtDateLabel(currentDate)}</div>
-      <div class="confirm-actions">
-        <button class="btn btn-ghost" onclick="clearSelection()">Not me / Cancel</button>
-        <button class="btn btn-primary" id="confirmBtn" onclick="confirmCheckIn()">Yes, this is me</button>
-      </div>
-    </div>
-  `;
-}
-
-function clearSelection(){
-  selectedMember = null;
-  $('checkinFlow').innerHTML = `
-    <div class="search-wrap">
-      <input class="search" id="searchBox" type="text" placeholder="Type your name or ID number to find yourself" oninput="renderMatches()" autocomplete="off">
-    </div>
-    <div class="search-hint">Everyone churches in individually — find your own name below, confirm, and you're done. Once you've churched in for the date above, your name won't show up again.</div>
-
-    <div class="results-wrap" id="resultsBox" style="display:none;"></div>
-    <div class="empty-state" id="emptyState" style="display:none;">
-      <h3>No matches</h3>
-      <div>Double check the spelling, or your ID number, or you may have already churched in today.</div>
-    </div>
-  `;
-}
-
-async function confirmCheckIn(){
-  if(!selectedMember) return;
-  const m = selectedMember;
-  const btn = $('confirmBtn');
-  if(btn){ btn.disabled = true; btn.textContent = 'Churching in…'; }
-
-  const row = {
-    member_id: m.id,
-    member_name: m.name,
-    attendance_date: currentDate,
-  };
-
-  try{
-    const { error } = await supabaseClient.from('attendance_records').insert([row]);
-    if(error){
-      // Unique violation = they (or someone else) already checked this
-      // member in for this date — treat it as success rather than an error.
-      if(error.code !== '23505') throw error;
-    }
-    checkedInIds.add(m.id);
-    showSuccess(m);
-  }catch(e){
-    console.error('Failed to record attendance:', e);
-    toast('⚠ Could not save — check your connection and that "attendance_records" table exists');
-    if(btn){ btn.disabled = false; btn.textContent = 'Yes, this is me'; }
-  }
-}
-
-function showSuccess(m){
-  selectedMember = null;
-  $('checkinFlow').innerHTML = `
-    <div class="success-card">
-      <div class="success-check">&#10003;</div>
-      <h3>Thanks, ${escapeHtml(m.name)}!</h3>
-      <p>Your attendance for ${fmtDateLabel(currentDate)} has been recorded.</p>
-    </div>
-  `;
-  setTimeout(()=>{ if(!selectedMember) clearSelection(); }, 1800);
-}
-
-let sessionWasOpen = null; // tracks previous open/closed state to detect transitions
-
-async function refreshSessionState(){
-  const prevDate = currentDate;
-  await loadSessionConfig();
-  await autoCloseIfExpired();
-
-  if(hasConfigTable && sessionConfig && sessionConfig.attendance_date){
-    currentDate = sessionConfig.attendance_date;
-  }
-  $('attendanceDate').value = currentDate;
-  $('dateLabel').textContent = "Welcome! We're glad you're here.";
-  // Once an admin config exists, the date is admin-controlled (via the
-  // Admin Panel), so lock the member-facing picker. With no app_config
-  // table, the date picker stays fully manual, like the original app.
-  $('attendanceDate').disabled = hasConfigTable;
-  $('attendanceDate').title = hasConfigTable ? 'Attendance date is set by an admin' : 'Tap to change the date';
-  if($('dateChevron')) $('dateChevron').style.display = hasConfigTable ? 'none' : '';
-
-  const open = sessionIsOpen();
-  const dateChanged = prevDate !== currentDate;
-
-  renderSessionBar(open);
-
-  if(!open){
-    if(sessionWasOpen !== false) $('checkinFlow').innerHTML = '';
-  }else if(sessionWasOpen === false || sessionWasOpen === null || dateChanged){
-    // Just opened (or the admin changed the date) — rebuild the normal
-    // search UI, exactly as the original app renders it on load.
-    clearSelection();
-  }
-
-  sessionWasOpen = open;
-  return open;
-}
-
+// ================= INIT =================
 async function init(){
-  $('todayLabel').textContent = new Date().toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'});
-  $('attendanceDate').value = currentDate;
-  $('dateLabel').textContent = "Welcome! We're glad you're here.";
-  await loadMembers();
-
-  const open = await refreshSessionState();
-  if(open){
-    await loadCheckedInForDate();
-    renderMatches();
-  }
-
-  // Poll periodically so the page reflects admin actions (start/end
-  // attendance, date change, auto-end) without needing a manual refresh.
-  setInterval(async () => {
-    const wasSelecting = !!selectedMember;
-    if(wasSelecting) return; // don't yank the UI out from under someone mid-confirm
-    const nowOpen = await refreshSessionState();
-    if(nowOpen){
-      await loadCheckedInForDate();
-      renderMatches();
+  if(sessionStorage.getItem(SESSION_KEY) === '1'){
+    try{
+      config = await fetchConfig();
+      renderAdminPanel();
+      return;
+    }catch(e){
+      // Fall through to login if config can't be fetched
+      sessionStorage.removeItem(SESSION_KEY);
     }
-  }, 20000);
+  }
+  renderLogin();
 }
 
 init();
-
 </script>
 
 </body>

@@ -1674,32 +1674,10 @@ function toast(msg){
 
 function uid(){ return 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2,8); }
 
-// ---- Automatic data loading (church-roster-data.json) ----
-// The JSON file sitting next to this HTML page is treated as the source of
-// truth. Every time the page loads, we fetch it fresh (cache:'no-store') so
-// edits made directly to the file are always picked up — no Import button
-// needed. If the fetch fails (file missing, invalid JSON, or blocked by the
-// browser's file:// security restrictions) we fall back to the last copy
-// this browser saved locally and show a friendly, dismissible banner
-// instead of crashing.
+// ---- Local browser cache (fallback data source) ----
+// If Supabase can't be reached, we fall back to the last copy this browser
+// saved locally and show a friendly, dismissible banner instead of crashing.
 const LOCAL_CACHE_KEY = 'church-roster-cache';
-
-async function fetchRosterFile(){
-  try{
-    const r = await fetch('./' + FILE_NAME + '?t=' + Date.now(), {cache:'no-store'});
-    if(!r.ok) return {ok:false, reason:'missing'};
-    let data;
-    try{ data = await r.json(); }
-    catch(e){ return {ok:false, reason:'invalid'}; }
-    if(!Array.isArray(data)) return {ok:false, reason:'invalid'};
-    return {ok:true, data};
-  }catch(e){
-    // fetch() throws outright (rather than resolving with !ok) when the
-    // browser refuses to even attempt the request — the classic symptom of
-    // opening this file directly (file://) instead of via a local server.
-    return {ok:false, reason: location.protocol === 'file:' ? 'blocked' : 'network'};
-  }
-}
 
 function cacheMembersLocally(){
   try{ localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(members)); }
@@ -1725,22 +1703,6 @@ function hideDataBanner(){
   $('dataBanner').className = 'data-banner';
 }
 
-function showDataBannerForReason(reason){
-  if(reason === 'missing'){
-    showDataBanner('error', `Couldn't find ${FILE_NAME}`,
-      `Make sure ${FILE_NAME} is in the same folder as this HTML file. Showing the last data saved in this browser instead.`);
-  } else if(reason === 'invalid'){
-    showDataBanner('error', `${FILE_NAME} could not be read`,
-      `The file exists but isn't valid JSON (it may be mid-edit or corrupted). Showing the last data saved in this browser instead.`);
-  } else if(reason === 'blocked'){
-    showDataBanner('error', 'Opened as a local file — auto-load is blocked',
-      `Browsers block pages opened directly from disk (file://) from reading other files for security reasons. Run a lightweight local server in this folder — e.g. "python3 -m http.server" then open http://localhost:8000 — and ${FILE_NAME} will load automatically every time. Showing the last data saved in this browser for now.`);
-  } else {
-    showDataBanner('error', `Couldn't load ${FILE_NAME}`,
-      `A network error stopped the file from loading. Showing the last data saved in this browser instead.`);
-  }
-}
-
 async function loadData(){
   await loadTrainings();
   try{
@@ -1759,40 +1721,21 @@ async function loadData(){
       return;
     }
 
-    // Supabase table is empty (first-time setup) — seed it from the
-    // church-roster-data.json file bundled next to this page, so the
-    // database starts populated instead of blank.
-    const result = await fetchRosterFile();
-    if(result.ok && result.data.length){
-      members = result.data;
-      normalizeAllMembers();
-      await syncMembersToSupabase();
-      cacheMembersLocally();
-      hideDataBanner();
-    } else {
-      members = readCachedMembers();
-      normalizeAllMembers();
-      if(members.length) await syncMembersToSupabase();
-      hideDataBanner();
-    }
+    // Supabase table is empty (first-time setup) — fall back to whatever
+    // this browser has cached locally instead of blank.
+    members = readCachedMembers();
+    normalizeAllMembers();
+    if(members.length) await syncMembersToSupabase();
+    hideDataBanner();
   }catch(e){
     // Supabase unreachable (offline, bad credentials, table not created
     // yet, etc.) — fall back to whatever this browser cached last, so the
     // app still shows data instead of breaking.
     console.error('Supabase load failed:', e);
-    const result = await fetchRosterFile();
-    if(result.ok){
-      members = result.data;
-      normalizeAllMembers();
-      cacheMembersLocally();
-      showDataBanner('error', 'Could not reach Supabase',
-        'Showing data from the local church-roster-data.json file instead. Check your internet connection and that the "members" table has been created in Supabase.');
-    } else {
-      members = readCachedMembers();
-      normalizeAllMembers();
-      showDataBanner('error', 'Could not reach Supabase',
-        'Showing the last data saved in this browser instead. Check your internet connection and that the "members" table has been created in Supabase.');
-    }
+    members = readCachedMembers();
+    normalizeAllMembers();
+    showDataBanner('error', 'Could not reach Supabase',
+      'Showing the last data saved in this browser instead. Check your internet connection and that the "members" table has been created in Supabase.');
   }
   renderAll();
 }
