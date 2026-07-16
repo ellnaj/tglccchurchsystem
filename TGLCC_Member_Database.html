@@ -1352,30 +1352,104 @@ function dbRowToMember(r){
   };
 }
 
-// Pushes the current in-memory `members` array to Supabase: upserts every
-// member (matched by their existing `id`), then deletes any row in the
-// database that no longer has a matching member in memory (covers
-// deletes). After syncing, member_no values assigned by the database are
-// read back onto the in-memory records.
-async function syncMembersToSupabase(){
-  if(!members.length){
-    // Guard against accidentally wiping the table if `members` is briefly
-    // empty during a load error.
-    return;
-  }
-  const rows = members.map(memberToDbRow);
+// ---- Row-scoped Supabase writes ----
+// IMPORTANT: none of these ever look at, upsert, or delete anything beyond
+// the specific row(s) passed in. There is no "full table sync" anymore —
+// that pattern is what caused the data-loss incident (a partially-loaded
+// local members[] array used to cause every other row in Supabase to be
+// deleted). Deletion only ever happens from deleteMemberRow(), and only
+// for the one id it's given.
+//
+// member_no is intentionally never included in memberToDbRow(), so these
+// upserts never touch it on an existing row — it's assigned once by the
+// database (see member_no_reuse_gaps.sql) the first time a member is
+// inserted, and stays stable across every future edit.
+
+// Insert or update exactly ONE member row. Returns the row Supabase wrote
+// back, so the caller can pick up the member_no the database assigned
+// (only relevant the first time a member is created).
+async function upsertMemberRow(member){
+  const row = memberToDbRow(member);
+  const { data, error } = await supabaseClient
+    .from('members')
+    .upsert(row, { onConflict: 'id' })
+    .select()
+    .single();
+  if(error) throw error;
+  return data;
+}
+
+// Insert or update a specific, explicit list of member rows — used only by
+// Excel import, where several members may legitimately change in one
+// action. Still never touches or deletes anything outside this list.
+async function upsertMembersBatch(memberList){
+  if(!memberList.length) return [];
+  const rows = memberList.map(memberToDbRow);
   const { data, error } = await supabaseClient
     .from('members')
     .upsert(rows, { onConflict: 'id' })
     .select();
-  if(error){ throw error; }
+  if(error) throw error;
+  return data || [];
+}
 
-  const keepIds = members.map(m=>m.id);
+// Delete exactly ONE member row. Only ever called from deleteMember(),
+// after the user has explicitly clicked Delete and confirmed the prompt.
+async function deleteMemberRow(id){
+  const { error } = await supabaseClient.from('members').delete().eq('id', id);
+  if(error) throw error;
+}
+
+// Save exactly one member: cache locally, then write only that member's
+// row to Supabase. This is the normal path for every add/edit in the app.
+async function saveOneMember(member){
+  cacheMembersLocally();
+  try{
+    const savedRow = await upsertMemberRow(member);
+    if(savedRow && savedRow.member_no != null && member.memberNo == null){
+      member.memberNo = savedRow.member_no;
+      cacheMembersLocally();
+    }
+  }catch(e){
+    console.error('Supabase save failed:', e);
+    toast('⚠ Saved locally, but Supabase sync failed — check your connection');
+  }
+}
+
+// Delete exactly one member: cache locally, then delete only that one row.
+async function deleteOneMember(id){
+  cacheMembersLocally();
+  try{
+    await deleteMemberRow(id);
+  }catch(e){
+    console.error('Supabase delete failed:', e);
+    toast('⚠ Deleted locally, but Supabase delete failed — check your connection');
+  }
+}
+
+// Full-dataset restore — the ONE deliberate, explicit exception to "never
+// delete automatically". This is only ever invoked from a user-triggered
+// Backup/Load flow (loadFromHandle / handleRestore), each of which already
+// requires admin authorization and an explicit "This will replace all
+// current data" confirmation before calling it. It is never reachable from
+// saveMember(), deleteMember(), setActive(), or handleImport().
+async function restoreAllMembersFromBackup(memberList){
+  if(!Array.isArray(memberList) || !memberList.length){
+    throw new Error('Refusing to restore an empty member list — this would wipe the database.');
+  }
+  const rows = memberList.map(memberToDbRow);
+  const { data, error } = await supabaseClient
+    .from('members')
+    .upsert(rows, { onConflict: 'id' })
+    .select();
+  if(error) throw error;
+
+  const keepIds = memberList.map(m=>m.id);
   await supabaseClient.from('members').delete().not('id', 'in', `(${keepIds.join(',')})`);
 
   if(Array.isArray(data)){
     const byId = new Map(data.map(r=>[r.id, r.member_no]));
-    members.forEach(m=>{ if(byId.has(m.id)) m.memberNo = byId.get(m.id); });
+    memberList.forEach(m=>{ if(byId.has(m.id)) m.memberNo = byId.get(m.id); });
   }
 }
 
@@ -1428,24 +1502,36 @@ async function loadTrainings(){
   }
 }
 
-// Syncs the full in-memory `trainings` array to Supabase: upserts every
-// training, then deletes any row that no longer has a matching training in
-// memory (covers deletes, including deleting the very last training).
-async function persistTrainings(){
+// ---- Row-scoped training writes ----
+// Same bug class as the old syncMembersToSupabase(): the previous version
+// deleted every training not present in the local array on every save
+// (and wiped the whole table if the array was briefly empty). Fixed the
+// same way — touch only the one row being saved or deleted.
+async function upsertTrainingRow(training){
+  const row = trainingToDbRow(training);
+  const { error } = await supabaseClient.from('trainings').upsert(row, { onConflict: 'id' });
+  if(error) throw error;
+}
+async function deleteTrainingRow(id){
+  const { error } = await supabaseClient.from('trainings').delete().eq('id', id);
+  if(error) throw error;
+}
+async function saveOneTraining(training){
   cacheTrainingsLocally();
   try{
-    if(trainings.length){
-      const rows = trainings.map(trainingToDbRow);
-      const { error } = await supabaseClient.from('trainings').upsert(rows, { onConflict: 'id' });
-      if(error) throw error;
-      const keepIds = trainings.map(t=>t.id);
-      await supabaseClient.from('trainings').delete().not('id', 'in', `(${keepIds.join(',')})`);
-    } else {
-      await supabaseClient.from('trainings').delete().neq('id', '__none__');
-    }
+    await upsertTrainingRow(training);
   }catch(e){
-    console.error('Supabase training sync failed:', e);
+    console.error('Supabase training save failed:', e);
     toast('⚠ Saved locally, but Supabase sync failed — check your connection');
+  }
+}
+async function deleteOneTraining(id){
+  cacheTrainingsLocally();
+  try{
+    await deleteTrainingRow(id);
+  }catch(e){
+    console.error('Supabase training delete failed:', e);
+    toast('⚠ Deleted locally, but Supabase delete failed — check your connection');
   }
 }
 
@@ -1727,10 +1813,21 @@ async function loadData(){
     }
 
     // Supabase table is empty (first-time setup) — fall back to whatever
-    // this browser has cached locally instead of blank.
+    // this browser has cached locally instead of blank, and seed Supabase
+    // with those rows. The table is already empty here, so a plain batch
+    // upsert (no delete step needed at all) is enough to seed it.
     members = readCachedMembers();
     normalizeAllMembers();
-    if(members.length) await syncMembersToSupabase();
+    if(members.length){
+      try{
+        const savedRows = await upsertMembersBatch(members);
+        const byId = new Map(savedRows.map(r=>[r.id, r.member_no]));
+        members.forEach(m=>{ if(byId.has(m.id)) m.memberNo = byId.get(m.id); });
+        cacheMembersLocally();
+      }catch(e){
+        console.error('Supabase seed failed:', e);
+      }
+    }
     hideDataBanner();
   }catch(e){
     // Supabase unreachable (offline, bad credentials, table not created
@@ -1745,16 +1842,6 @@ async function loadData(){
   renderAll();
 }
 
-
-async function persist(){
-  cacheMembersLocally();
-  try{
-    await syncMembersToSupabase();
-  }catch(e){
-    console.error('Supabase save failed:', e);
-    toast('⚠ Saved locally, but Supabase sync failed — check your connection');
-  }
-}
 
 function calcAge(birthday){
   if(!birthday) return '';
@@ -2572,7 +2659,7 @@ async function setActive(id, isActive){
     m.ministry = '';
   }
   m.active = isActive;
-  await persist();
+  await saveOneMember(m);
   renderAll();
   toast(isActive ? (reactivating ? 'Member reactivated — history logged in notes' : 'Member reactivated') : 'Member marked inactive — logged in notes');
 }
@@ -3269,7 +3356,7 @@ async function saveTraining(){
   };
   const idx = trainings.findIndex(t=>t.id===data.id);
   if(idx>=0) trainings[idx] = data; else trainings.push(data);
-  await persistTrainings();
+  await saveOneTraining(data);
   renderTrainings();
   closeTrainingForm();
   toast(editingTrainingId ? 'Training updated' : 'Training added');
@@ -3279,8 +3366,9 @@ async function deleteTraining(){
   if(!canDeleteData()) return;
   if(!editingTrainingId) return;
   if(!confirm('Delete this training record? This cannot be undone.')) return;
-  trainings = trainings.filter(t=>t.id!==editingTrainingId);
-  await persistTrainings();
+  const idToDelete = editingTrainingId;
+  trainings = trainings.filter(t=>t.id!==idToDelete);
+  await deleteOneTraining(idToDelete);
   renderTrainings();
   closeTrainingForm();
   toast('Training deleted');
@@ -3763,7 +3851,7 @@ async function saveMember(){
   };
   const idx = members.findIndex(m=>m.id===data.id);
   if(idx>=0){ data.memberNo = members[idx].memberNo; members[idx] = data; } else members.push(data);
-  await persist();
+  await saveOneMember(data);
   renderAll();
   closeForm();
   toast(reactivated ? 'Member updated — history logged in notes' : (becomingInactive ? 'Member updated — marked inactive, logged in notes' : (editingId ? 'Member updated' : 'Member added')));
@@ -3773,8 +3861,9 @@ async function deleteMember(){
   if(!canDeleteData()) return;
   if(!editingId) return;
   if(!confirm('Delete this member? This cannot be undone.')) return;
-  members = members.filter(m=>m.id!==editingId);
-  await persist();
+  const idToDelete = editingId;
+  members = members.filter(m=>m.id!==idToDelete);
+  await deleteOneMember(idToDelete);
   renderAll();
   closeForm();
   toast('Member deleted');
@@ -3819,7 +3908,13 @@ async function loadFromHandle(handle, confirmFirst){
   if(confirmFirst && !confirm(`Load ${parsed.length} member(s) from ${handle.name}? This will replace all current data.`)) return;
   members = parsed;
   normalizeAllMembers();
-  await persist();
+  cacheMembersLocally();
+  try{
+    await restoreAllMembersFromBackup(members);
+  }catch(e){
+    console.error('Supabase restore failed:', e);
+    toast('⚠ Loaded locally, but Supabase restore failed — check your connection');
+  }
   renderAll();
   toast('Loaded ' + handle.name);
 }
@@ -3911,7 +4006,13 @@ function handleRestore(event){
       if(!confirm(`Load ${parsed.length} member(s) from this file? This will replace all current data.`)) return;
       members = parsed;
       normalizeAllMembers();
-      await persist();
+      cacheMembersLocally();
+      try{
+        await restoreAllMembersFromBackup(members);
+      }catch(restoreErr){
+        console.error('Supabase restore failed:', restoreErr);
+        toast('⚠ Loaded locally, but Supabase restore failed — check your connection');
+      }
       renderAll();
       toast('Data loaded');
     }catch(err){
@@ -3954,6 +4055,7 @@ function handleImport(event){
       const rows = XLSX.utils.sheet_to_json(sheet, {defval:''});
       let added = 0, updated = 0;
       const newMinistries = new Set();
+      const touchedMembers = []; // only these rows get written to Supabase
       rows.forEach(row=>{
         const norm = {};
         Object.keys(row).forEach(k=>{ norm[k.trim().toLowerCase()] = row[k]; });
@@ -3985,10 +4087,19 @@ function handleImport(event){
         rec.churchRoles = splitLegacyRoles(rec.ministry).map(resolveImportedRole).filter(Boolean);
         rec.churchRoles.forEach(role=>{ if(!isKnownRoleValue(role)) newMinistries.add(role); });
         const existing = members.find(m=>m.name.toLowerCase()===name.toLowerCase());
-        if(existing){ Object.assign(existing, rec); normalizeMember(existing); updated++; }
-        else { members.push(normalizeMember({id:uid(), ...rec})); added++; }
+        if(existing){ Object.assign(existing, rec); normalizeMember(existing); updated++; touchedMembers.push(existing); }
+        else { const created = normalizeMember({id:uid(), ...rec}); members.push(created); added++; touchedMembers.push(created); }
       });
-      await persist();
+      cacheMembersLocally();
+      try{
+        const savedRows = await upsertMembersBatch(touchedMembers);
+        const byId = new Map(savedRows.map(r=>[r.id, r.member_no]));
+        touchedMembers.forEach(m=>{ if(byId.has(m.id) && m.memberNo == null) m.memberNo = byId.get(m.id); });
+        cacheMembersLocally();
+      }catch(e){
+        console.error('Supabase import sync failed:', e);
+        toast('⚠ Imported locally, but Supabase sync failed — check your connection');
+      }
       renderAll();
       let msg = `Imported: ${added} added, ${updated} updated`;
       if(newMinistries.size){
