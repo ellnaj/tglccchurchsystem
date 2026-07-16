@@ -110,7 +110,7 @@
   <div class="back-bar">
     <button type="button" class="back-link" onclick="goBack()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-      Back
+      Close
     </button>
   </div>
   <div class="masthead">
@@ -189,11 +189,14 @@ function todayStr(){
 function uid(){ return 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2,8); }
 
 function goBack(){
-  if(window.history.length > 1){
-    window.history.back();
-  } else {
-    window.location.href = './TGLCC_Attendance_Record.html';
-  }
+  // This page is opened as a new tab/window from the Attendance page
+  // (target="_blank"), so browser history is usually empty here and
+  // "back" wouldn't go anywhere useful. Close the window instead.
+  window.close();
+  // Most browsers only let scripts close a tab they themselves opened.
+  // If this page wasn't opened that way, window.close() silently does
+  // nothing — fall back to returning to the Attendance page.
+  window.location.href = './TGLCC_Attendance_Record.html';
 }
 
 // Converts text to Proper Case, capitalizing the first letter after the
