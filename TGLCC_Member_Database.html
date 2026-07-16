@@ -808,7 +808,7 @@
       <input type="file" id="backupInput" accept=".json" onchange="handleRestore(event)">
       <button class="btn btn-primary" id="addMemberBtn" onclick="openForm()">+ Add member</button>
     </div>
-    <div class="hint" style="margin-top:-6px;">Data is saved automatically as you add, edit, or delete members — including photos. Click Backup to write a church-roster-data.json file to your computer; once you've saved once, the app will try to reload from that same file automatically each time you open the page.</div>
+    <div class="hint" style="margin-top:-6px;">Data is saved automatically to Supabase as you add, edit, or delete members — including photos. Click Backup any time to save a church-roster-data.json snapshot to your computer. Click Load only when you need to restore data from a backup file — it will replace all current data with the contents of that file.</div>
 
     <div class="stat-strip">
       <div class="stat">Total members <b id="statTotal">0</b></div>
@@ -1740,30 +1740,6 @@ async function loadData(){
   renderAll();
 }
 
-
-// Tries to silently reconnect to a church-roster-data.json file that was
-// linked on a previous visit (via Save or Load), using the File System
-// Access API. Returns true if data was reloaded from that file.
-async function reconnectLinkedFileIfAny(){
-  if(fsSupported()){
-    try{
-      const handle = await idbGet('fileHandle');
-      if(handle){
-        linkedFileHandle = handle;
-        const perm = await handle.queryPermission({mode:'readwrite'});
-        if(perm === 'granted'){
-          await loadFromHandle(handle, false);
-          return true;
-        } else {
-          toast('Click Load to reconnect church-roster-data.json');
-        }
-      }
-    }catch(e){
-      // Linked file may have been moved, renamed, or deleted — ignore and keep using autosave.
-    }
-  }
-  return false;
-}
 
 async function persist(){
   cacheMembersLocally();
@@ -3718,6 +3694,13 @@ async function saveMember(){
   if(!canEditData()) return;
   const name = $('f-name').value.trim();
   if(!name){ toast('Name is required'); return; }
+  const isDuplicateName = members.some(m =>
+    m.id !== editingId && (m.name || '').trim().toLowerCase() === name.toLowerCase()
+  );
+  if(isDuplicateName){
+    alert('Duplicate name not allowed. This member already exists.');
+    return;
+  }
   const existing = editingId ? members.find(m=>m.id===editingId) : null;
   const wasInactive = existing ? existing.active === false : false;
   const nowActive = $('f-active-check').checked;
@@ -3777,48 +3760,22 @@ async function deleteMember(){
 
 function triggerImport(){ $('fileInput').click(); }
 
-// ---- File-based Save / Load (church-roster-data.json) ----
-// Uses the File System Access API (Chrome/Edge) to write and re-read a real
-// file on disk. The chosen file handle is remembered in IndexedDB so that
-// future visits can reconnect to the same file. Browsers without this API
+// ---- File-based Backup / Load (church-roster-data.json) ----
+// Supabase is the app's one automatic data source (see loadData() /
+// autoLoadOnLogin()). This section is purely a manual convenience:
+// - Backup writes a snapshot of the current data to a .json file.
+// - Load reads a previously saved .json file back in, on request only.
+// Neither of these ever runs automatically, and no file handle is
+// remembered between visits — every Backup/Load is a fresh, explicit
+// user action. Uses the File System Access API (Chrome/Edge) to write and
+// re-read a real file on disk when available; browsers without that API
 // (Firefox, Safari) fall back to a plain download / file-picker upload.
 
 const FILE_NAME = 'church-roster-data.json';
-const IDB_NAME = 'church-roster-fs';
-const IDB_STORE = 'handles';
-let linkedFileHandle = null;
+let linkedFileHandle = null; // in-memory only, for this session's Backup convenience — never persisted across visits
 
 function fsSupported(){
   return typeof window.showSaveFilePicker === 'function' && typeof window.showOpenFilePicker === 'function';
-}
-
-function idbOpen(){
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(IDB_NAME, 1);
-    req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-async function idbSet(key, value){
-  const db = await idbOpen();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(IDB_STORE, 'readwrite');
-    tx.objectStore(IDB_STORE).put(value, key);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-async function idbGet(key){
-  const db = await idbOpen();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(IDB_STORE, 'readonly');
-    const req = tx.objectStore(IDB_STORE).get(key);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
 }
 
 async function verifyPermission(handle, mode){
@@ -3855,7 +3812,6 @@ async function saveToFile(){
           suggestedName: FILE_NAME,
           types: [{ description: 'JSON File', accept: {'application/json': ['.json']} }]
         });
-        await idbSet('fileHandle', linkedFileHandle);
       }
       const ok = await verifyPermission(linkedFileHandle, 'readwrite');
       if(!ok) throw new Error('Permission denied');
@@ -3910,7 +3866,6 @@ async function triggerLoadFromDisk(){
       });
       await loadFromHandle(handle, true);
       linkedFileHandle = handle;
-      await idbSet('fileHandle', handle);
     }catch(err){
       if(err && err.name === 'AbortError') return;
       console.error(err);
@@ -3945,14 +3900,11 @@ function handleRestore(event){
   reader.readAsText(file);
 }
 
-// Called right after a successful admin login. First tries to silently
-// reconnect to a church-roster-data.json file linked on a previous visit
-// (File System Access API, from a manual Save/Load). If there's no linked
-// file, re-fetches church-roster-data.json fresh — in case it changed on
-// disk between the page loading and the admin logging in.
+// Called right after a successful login. Supabase is the app's one and
+// only automatic data source — this always loads fresh from Supabase.
+// Local backup files (via the Backup/Load buttons) are never auto-loaded;
+// they're only read when a user explicitly clicks Load.
 async function autoLoadOnLogin(){
-  const reconnected = await reconnectLinkedFileIfAny();
-  if(reconnected){ hideDataBanner(); return; }
   await loadData();
 }
 
