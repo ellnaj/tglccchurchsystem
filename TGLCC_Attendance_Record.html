@@ -112,6 +112,7 @@
   }
   .status-pill.pending{background:var(--gold-tint);color:var(--gold);}
   .status-pill.active{background:var(--green-tint);color:var(--green-dark);}
+  .status-pill.ended{background:var(--paper);color:var(--ink-soft);border:1px solid var(--line-strong);}
   .status-dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0;}
   .status-dot.pulse{animation:statusPulse 1.6s ease-in-out infinite;}
   @keyframes statusPulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
@@ -280,6 +281,40 @@ let sessionConfig = null;     // {attendance_active, attendance_date, session_en
 let hasConfigTable = true;    // becomes false if app_config is missing/unreadable
 let hasStartedAtColumn = true; // becomes false if session_started_at hasn't been added to app_config yet
 let countdownTicker = null;   // live "auto-ends in" ticker, ticks every second while a session is open
+let pollTimer = null;         // periodic background refresh, stopped for good once this device checks someone in
+let deviceId = null;          // persistent per-device id, generated once and reused on every visit
+
+// ---- Persistent Device ID (localStorage) ----
+// Generated once per browser/device the first time the QR code is
+// scanned and opened, then reused on every later visit from that same
+// device. Not tied to a single tab/session, so it survives the page
+// (or the whole browser) being closed and reopened.
+const DEVICE_ID_KEY = 'tglcc_device_id';
+function getOrCreateDeviceId(){
+  try{
+    let id = localStorage.getItem(DEVICE_ID_KEY);
+    if(!id){
+      id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+         : 'dev-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+      localStorage.setItem(DEVICE_ID_KEY, id);
+    }
+    return id;
+  }catch(e){
+    return null; // localStorage unavailable (e.g. private browsing) — not fatal
+  }
+}
+
+// ---- Single-use lock for THIS device ----
+// Once a member successfully churches in from this device, the page
+// locks itself so the same device can't be reused to check someone
+// else in — even if the page/tab is closed and reopened later.
+const SESSION_ENDED_KEY = 'tglcc_attendance_checked_in';
+function isLockedLocally(){
+  try{ return localStorage.getItem(SESSION_ENDED_KEY) === '1'; }catch(e){ return false; }
+}
+function lockThisPage(){
+  try{ localStorage.setItem(SESSION_ENDED_KEY, '1'); }catch(e){ /* ignore */ }
+}
 
 function sessionIsOpen(){
   if(!hasConfigTable || !sessionConfig) return true; // fallback: always open
@@ -600,7 +635,43 @@ function showSuccess(m){
       <p>Your attendance for ${fmtDateLabel(currentDate)} has been recorded.</p>
     </div>
   `;
-  setTimeout(()=>{ if(!selectedMember) clearSelection(); }, 1800);
+  // Lock the page for good after a brief success message, so the next
+  // person can't reuse this same open page to check someone else in.
+  setTimeout(()=>{ showSessionEndedScreen(); }, 2500);
+}
+
+// ---- Session Ended screen ----
+// Called once a member has successfully churched in on this page. Stops
+// all background polling, disables the date picker, and replaces the
+// whole check-in area with a locked "Session Ended" state.
+function showSessionEndedScreen(){
+  lockThisPage();
+
+  if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+  if(countdownTicker){ clearInterval(countdownTicker); countdownTicker = null; }
+  selectedMember = null;
+
+  const dateInput = $('attendanceDate');
+  if(dateInput){ dateInput.disabled = true; dateInput.title = 'Attendance for this page has ended'; }
+  if($('dateChevron')) $('dateChevron').style.display = 'none';
+
+  const bar = $('sessionBar');
+  if(bar) bar.innerHTML = '';
+
+  $('checkinFlow').innerHTML = `
+    <div class="hero-card">
+      <span class="status-pill ended"><span class="status-dot"></span>Session Ended</span>
+      <h2>You're all set!</h2>
+      <p>This attendance session has ended for this page. If you still need to church in, please ask an usher for a fresh attendance link.</p>
+    </div>
+  `;
+
+  // Try to automatically close the tab/page now that attendance is done.
+  // Most browsers only allow scripts to close a page they themselves
+  // opened (e.g. via window.open), so this silently does nothing when
+  // the page was opened normally by scanning the QR code — the "Session
+  // Ended" screen above remains as the fallback in that case.
+  try{ window.close(); }catch(e){ /* ignore */ }
 }
 
 let sessionWasOpen = null; // tracks previous open/closed state to detect transitions
@@ -641,6 +712,19 @@ async function refreshSessionState(){
 
 async function init(){
   $('todayLabel').textContent = new Date().toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'});
+
+  // Generate (or retrieve, if this device has visited before) this
+  // device's persistent id.
+  deviceId = getOrCreateDeviceId();
+
+  // If this device already churched someone in (e.g. an accidental
+  // refresh or reopen right after confirming), keep it locked — don't
+  // reload the search UI for the next person.
+  if(isLockedLocally()){
+    showSessionEndedScreen();
+    return;
+  }
+
   $('attendanceDate').value = currentDate;
   $('dateLabel').textContent = "Welcome! We're glad you're here.";
   await loadMembers();
@@ -653,7 +737,8 @@ async function init(){
 
   // Poll periodically so the page reflects admin actions (start/end
   // attendance, date change, auto-end) without needing a manual refresh.
-  setInterval(async () => {
+  pollTimer = setInterval(async () => {
+    if(isLockedLocally()) return; // page already used and locked for this tab
     const wasSelecting = !!selectedMember;
     if(wasSelecting) return; // don't yank the UI out from under someone mid-confirm
     const nowOpen = await refreshSessionState();
