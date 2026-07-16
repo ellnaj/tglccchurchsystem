@@ -676,6 +676,11 @@
   .org-group .og-title{
     font-family:var(--font-display);font-weight:600;font-size:14.5px;color:var(--green-dark);
     margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+  }
+  .org-group .og-title .og-count{
+    font-family:var(--font-mono);font-size:11px;font-weight:500;color:var(--ink-soft);
+    flex:none;
   }
   .org-member-row{display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;}
   .org-member-row:hover .om-name{color:var(--green-dark);}
@@ -2808,7 +2813,7 @@ function orgMemberRowHtml(m){
 function orgGroupHtml(group){
   return `
     <div class="org-group">
-      <div class="og-title">${escapeHtml(group.label)}</div>
+      <div class="og-title"><span>${escapeHtml(group.label)}</span><span class="og-count">${group.members.length}</span></div>
       ${group.members.map(orgMemberRowHtml).join('')}
     </div>`;
 }
