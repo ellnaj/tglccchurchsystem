@@ -309,11 +309,31 @@ function getOrCreateDeviceId(){
 // locks itself so the same device can't be reused to check someone
 // else in — even if the page/tab is closed and reopened later.
 const SESSION_ENDED_KEY = 'tglcc_attendance_checked_in';
+// How long a single device stays locked after someone churches in from
+// it, before it's allowed to be used again (e.g. for a second service
+// later the same day). Change this number to adjust the window.
+const LOCK_DURATION_HOURS = 6;
+const LOCK_DURATION_MS = LOCK_DURATION_HOURS * 60 * 60 * 1000;
+
 function isLockedLocally(){
-  try{ return localStorage.getItem(SESSION_ENDED_KEY) === '1'; }catch(e){ return false; }
+  try{
+    const raw = localStorage.getItem(SESSION_ENDED_KEY);
+    if(!raw) return false;
+    // Back-compat: older versions of this page stored the literal string
+    // '1' with no timestamp, which never expired. Treat that as locked
+    // but immediately expired, so it clears itself on next load.
+    const lockedAt = raw === '1' ? 0 : parseInt(raw, 10);
+    if(!lockedAt || isNaN(lockedAt)) return false;
+    const expired = (Date.now() - lockedAt) >= LOCK_DURATION_MS;
+    if(expired){
+      localStorage.removeItem(SESSION_ENDED_KEY);
+      return false;
+    }
+    return true;
+  }catch(e){ return false; }
 }
 function lockThisPage(){
-  try{ localStorage.setItem(SESSION_ENDED_KEY, '1'); }catch(e){ /* ignore */ }
+  try{ localStorage.setItem(SESSION_ENDED_KEY, String(Date.now())); }catch(e){ /* ignore */ }
 }
 
 function sessionIsOpen(){
@@ -662,7 +682,7 @@ function showSessionEndedScreen(){
     <div class="hero-card">
       <span class="status-pill ended"><span class="status-dot"></span>Session Ended</span>
       <h2>You're all set!</h2>
-      <p>This attendance session has ended for this page. If you still need to church in, please ask an usher for a fresh attendance link.</p>
+      <p>This attendance session has ended for this page. If you still need to church in, please ask an usher for a fresh attendance link. This page will unlock itself automatically in a few hours for the next service.</p>
     </div>
   `;
 
