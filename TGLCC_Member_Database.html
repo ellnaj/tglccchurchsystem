@@ -921,7 +921,7 @@
 
       <div class="att-panel">
         <div class="att-panel-head"><h3>Monthly breakdown by week</h3></div>
-        <div class="hint" style="margin-top:-4px;margin-bottom:10px;">Attendees for each Friday service in the selected month, with attendance % of active members — so you can see which week ran higher or lower.</div>
+        <div class="hint" style="margin-top:-4px;margin-bottom:10px;">Total attendees for each service week in the selected month (Sunday–Saturday, not just the Friday date), with attendance % of active members — so you can see which week ran higher or lower.</div>
         <div class="toolbar" style="margin-bottom:12px;">
           <input type="month" id="overviewMonthPicker" onchange="renderOverviewMonthlyBreakdown()">
         </div>
@@ -1948,7 +1948,24 @@ async function renderOverviewMonthlyBreakdown(){
   }
 
   const weeks = fridays.map((dateStr, idx)=>{
-    const total = records.filter(r=>r.attendance_date===dateStr).length;
+    // Count attendance for the whole service week (Sun–Sat) that this
+    // Friday falls in, not just the Friday date itself — so check-ins
+    // recorded on other days of that same week (e.g. a make-up day or
+    // a second gathering) still count toward that week's total/%.
+    const friday = new Date(dateStr + 'T00:00:00');
+    const weekStart = new Date(friday);
+    weekStart.setDate(friday.getDate() - friday.getDay()); // Sunday of that week
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6); // Saturday of that week
+    const weekStartStr = isoDate(weekStart);
+    const weekEndStr = isoDate(weekEnd);
+
+    const attendeesThisWeek = new Set(
+      records
+        .filter(r => r.attendance_date >= weekStartStr && r.attendance_date <= weekEndStr)
+        .map(r => r.member_id)
+    );
+    const total = attendeesThisWeek.size;
     const pct = activeTotal ? Math.round((total / activeTotal) * 1000) / 10 : 0;
     return { week: idx+1, dateStr, total, pct };
   });
