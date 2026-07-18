@@ -1221,6 +1221,10 @@
 
       <div class="form-section-title" style="margin-top:18px;">Participants</div>
       <input class="search" id="participantSearch" type="text" placeholder="Search active members" oninput="renderParticipantPicker()" style="margin-bottom:10px;width:100%;">
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;color:var(--ink-soft);cursor:pointer;">
+        <input type="checkbox" id="includeInactiveParticipants" onchange="renderParticipantPicker()">
+        Include inactive members
+      </label>
       <div class="participant-picker" id="participantPicker"></div>
       <div class="participant-count" id="participantCount"></div>
 
@@ -1840,6 +1844,64 @@ async function loadData(){
       'Showing the last data saved in this browser instead. Check your internet connection and that the "members" table has been created in Supabase.');
   }
   renderAll();
+}
+
+/* ---- Real-time synchronization (Supabase Realtime) --------------------
+   Whenever any signed-in user adds, edits, deletes, or imports a member,
+   or adds/edits/deletes a training — on any device, desktop or mobile —
+   every other open browser picks up the change automatically and updates
+   its screen, with no page reload needed. This only patches the exact
+   row that changed (never a full reload), so it's safe to receive events
+   for rows the local browser already knows about, including its own
+   writes echoed back.
+   NOTE: this requires Realtime to be turned on for the "members" and
+   "trainings" tables in the Supabase dashboard (Database > Replication).
+   If Realtime isn't reachable (offline, not enabled yet, etc.) the app
+   simply keeps working as before — this is additive, not required for
+   the app to function. */
+function applyRemoteMemberChange(eventType, newRow, oldRow){
+  if(eventType === 'DELETE'){
+    const id = oldRow && oldRow.id;
+    if(id == null) return;
+    members = members.filter(m=>m.id !== id);
+  }else{
+    if(!newRow) return;
+    const incoming = dbRowToMember(newRow);
+    const idx = members.findIndex(m=>m.id === incoming.id);
+    if(idx >= 0) members[idx] = incoming; else members.push(incoming);
+  }
+  normalizeAllMembers();
+  cacheMembersLocally();
+  renderAll();
+}
+
+function applyRemoteTrainingChange(eventType, newRow, oldRow){
+  if(eventType === 'DELETE'){
+    const id = oldRow && oldRow.id;
+    if(id == null) return;
+    trainings = trainings.filter(t=>t.id !== id);
+  }else{
+    if(!newRow) return;
+    const incoming = dbRowToTraining(newRow);
+    const idx = trainings.findIndex(t=>t.id === incoming.id);
+    if(idx >= 0) trainings[idx] = incoming; else trainings.push(incoming);
+  }
+  cacheTrainingsLocally();
+  renderAll();
+}
+
+try{
+  supabaseClient
+    .channel('tglcc-db-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, (payload) => {
+      applyRemoteMemberChange(payload.eventType, payload.new, payload.old);
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'trainings' }, (payload) => {
+      applyRemoteTrainingChange(payload.eventType, payload.new, payload.old);
+    })
+    .subscribe();
+}catch(e){
+  console.error('Supabase Realtime subscription failed to start:', e);
 }
 
 
@@ -3300,6 +3362,7 @@ function openTrainingForm(id){
   selectedParticipantIds = new Set(t && Array.isArray(t.participantIds) ? t.participantIds : []);
   $('deleteTrainingBtn').style.display = (id && canDeleteData()) ? '' : 'none';
   $('participantSearch').value = '';
+  $('includeInactiveParticipants').checked = false;
   renderParticipantPicker();
   $('trainingModalOverlay').classList.add('open');
   setTimeout(()=>$('t-name').focus(), 0);
@@ -3315,11 +3378,16 @@ function closeTrainingForm(){
 // checked even while filtering.
 function renderParticipantPicker(){
   const q = ($('participantSearch').value || '').trim().toLowerCase();
-  // Show every active member, PLUS any already-selected member even if
-  // they're inactive — so checking a member (active or inactive) never
-  // makes them disappear from this list while the form is open.
+  const includeInactive = $('includeInactiveParticipants') && $('includeInactiveParticipants').checked;
+  // Default (checkbox off): show every active member, PLUS any already-
+  // selected member even if they're inactive — so checking a member
+  // (active or inactive) never makes them disappear from this list while
+  // the form is open. This is unchanged from before.
+  // When "Include inactive members" is checked, inactive members are
+  // also shown so they can be newly selected, not just kept if already
+  // chosen.
   const list = members
-    .filter(m => m.active !== false || selectedParticipantIds.has(m.id))
+    .filter(m => m.active !== false || includeInactive || selectedParticipantIds.has(m.id))
     .filter(m => !q || (m.name||'').toLowerCase().includes(q))
     .sort((a,b)=>(a.name||'').localeCompare(b.name||''));
 
@@ -4036,6 +4104,8 @@ async function autoLoadOnLogin(){
 // use the Backup button any time to also write it to disk.)
 async function handleLogout(){
   currentRole = null;
+  clearSessionTimer();
+  clearPersistedSession();
   $('appRoot').style.display = 'none';
   $('loginOverlay').style.display = '';
   $('loginError').textContent = '';
@@ -4304,6 +4374,7 @@ function attemptLogin(){
     $('appRoot').style.display = '';
     applyRolePermissions();
     autoLoadOnLogin();
+    resetSessionTimer();
   }else{
     $('loginError').textContent = 'Incorrect password. Please try again.';
     $('loginPassword').value = '';
@@ -4375,6 +4446,110 @@ function sendForgotPasswordEmail(){
   window.location.href = `mailto:${ADMIN_RESET_EMAIL}?subject=${subject}&body=${body}`;
   closeForgotPassword();
 }
+
+/* ---- Session persistence (sessionStorage) + automatic inactivity ------
+   timeout ---------------------------------------------------------------
+   - Keeps a signed-in user logged in across a page refresh, but only for
+     as long as their session is still valid — nothing is remembered
+     permanently. sessionStorage is used on purpose: it's cleared the
+     moment the browser tab/window is closed, unlike localStorage.
+   - For security, a signed-in user is automatically logged out after a
+     period of no interaction. Default: 5 minutes. This works the same
+     way on desktop (mouse/keyboard activity) and mobile (touch activity)
+     since both sets of events reset the same timer.
+   - Logging out (manually or via timeout) immediately clears the saved
+     session and returns to the Sign In page.
+   ========================================================================= */
+const SESSION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes of inactivity
+const SESSION_STORAGE_KEY = 'tglcc_session';
+
+let sessionTimeoutTimer = null;
+
+// Saves (or refreshes) the current session: who's logged in, and the
+// moment it will expire if no further activity happens before then.
+function persistSession(){
+  if(!currentRole) return;
+  try{
+    sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
+      role: currentRole,
+      expiresAt: Date.now() + SESSION_TIMEOUT_MS
+    }));
+  }catch(e){ /* storage disabled (e.g. private browsing) */ }
+}
+
+// Wipes the saved session (logout, or timeout).
+function clearPersistedSession(){
+  try{ sessionStorage.removeItem(SESSION_STORAGE_KEY); }catch(e){}
+}
+
+// Reads back a saved session, if any. Returns null if there isn't one,
+// it's malformed, or it names a role that no longer exists.
+function readPersistedSession(){
+  try{
+    const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if(!raw) return null;
+    const parsed = JSON.parse(raw);
+    if(!parsed || !parsed.role || !parsed.expiresAt || !ROLE_LABELS[parsed.role]) return null;
+    return parsed;
+  }catch(e){ return null; }
+}
+
+// Restarts the inactivity countdown and refreshes the saved session's
+// expiry. Called on login, on every detected activity, and right after
+// a session is restored on page load.
+function resetSessionTimer(){
+  if(!currentRole) return; // nobody logged in — nothing to time out
+  persistSession();
+  if(sessionTimeoutTimer) clearTimeout(sessionTimeoutTimer);
+  sessionTimeoutTimer = setTimeout(handleSessionTimeout, SESSION_TIMEOUT_MS);
+}
+
+// Stops the countdown entirely (called on logout).
+function clearSessionTimer(){
+  if(sessionTimeoutTimer){ clearTimeout(sessionTimeoutTimer); sessionTimeoutTimer = null; }
+}
+
+// Fires once the timeout elapses with no activity: signs the user out
+// and leaves a short explanation on the login screen.
+async function handleSessionTimeout(){
+  if(!currentRole) return;
+  await handleLogout();
+  $('loginError').textContent = 'You were signed out after 5 minutes of inactivity.';
+}
+
+// Any of these interactions counts as "activity" and pushes the timeout
+// back out. mousemove/mousedown/keydown/scroll/click cover desktop use;
+// touchstart/touchmove cover mobile/tablet touch input. { passive:true }
+// keeps these listeners from affecting scroll performance.
+['mousemove','mousedown','keydown','scroll','touchstart','touchmove','click'].forEach(evt=>{
+  document.addEventListener(evt, resetSessionTimer, { passive: true });
+});
+
+// If the browser tab/app is backgrounded (common on mobile when
+// switching apps) and then comes back into view, re-evaluate the timer
+// immediately rather than waiting for the next tap or swipe.
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible') resetSessionTimer();
+});
+
+// On page load (e.g. a refresh), silently sign back in if a still-valid
+// session was saved for this tab. An expired or missing session just
+// leaves the normal Sign In page showing.
+function tryRestoreSession(){
+  const session = readPersistedSession();
+  if(!session) return;
+  if(session.expiresAt <= Date.now()){
+    clearPersistedSession();
+    return;
+  }
+  currentRole = session.role;
+  $('loginOverlay').style.display = 'none';
+  $('appRoot').style.display = '';
+  applyRolePermissions();
+  autoLoadOnLogin();
+  resetSessionTimer();
+}
+tryRestoreSession();
 </script>
 
 </body>
