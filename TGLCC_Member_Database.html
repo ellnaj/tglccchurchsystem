@@ -697,8 +697,8 @@
   <div class="login-card">
     <h2>Sign In</h2>
     <div class="login-sub">Enter your password to open the Church Member Database.</div>
-    <form id="loginForm" onsubmit="return false;">
-      <input type="password" id="loginPassword" placeholder="Password" autocomplete="off">
+    <form id="loginForm" onsubmit="return false;" autocomplete="off">
+      <input type="password" id="loginPassword" name="tglcc-access-code" placeholder="Password" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other">
       <div class="login-error" id="loginError"></div>
       <button type="button" class="btn btn-primary" onclick="attemptLogin()">Enter</button>
     </form>
@@ -4370,6 +4370,7 @@ function attemptLogin(){
   const role = roleForPassword(val);
   if(role){
     currentRole = role;
+    $('loginPassword').value = '';
     $('loginOverlay').style.display = 'none';
     $('appRoot').style.display = '';
     applyRolePermissions();
