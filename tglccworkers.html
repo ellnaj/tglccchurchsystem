@@ -316,6 +316,16 @@ function roleLabel(row){
   return 'Worker';
 }
 
+// Church hierarchy display order (does not affect stored data or filters):
+// 1) Head Pastor  2) Associate Pastor  3) Ministry Head  4) Ministry Member
+function roleRank(row){
+  const ministry = (pickField(row, ['ministry','ministry_name','department','role_ministry']) || '').trim().toLowerCase();
+  if(ministry === 'head pastor') return 1;
+  if(ministry === 'associate pastor') return 2;
+  if(row.leader === true) return 3; // Ministry Head
+  return 4; // Ministry Member
+}
+
 function initials(name){
   const parts = String(name).trim().split(/\s+/).filter(Boolean);
   if(!parts.length) return '?';
@@ -452,6 +462,8 @@ function renderWorkers(){
       return name.includes(term) || ministry.includes(term);
     });
   }
+
+  rows = [...rows].sort((a, b) => workerName(a).localeCompare(workerName(b)));
 
   count.textContent = rows.length + (rows.length === 1 ? ' person' : ' people') + ' · ' + (activeFilter === 'active' ? 'Active' : 'Inactive');
 
