@@ -455,6 +455,153 @@
   }
   .auth-modal .btn-block svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
   .auth-modal button[disabled]{opacity:0.6;cursor:not-allowed;transform:none !important;}
+
+  /* ---- training ---- */
+  .training-toolbar{
+    display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;
+    margin-bottom:24px;
+  }
+  .training-search{
+    position:relative;flex:1;min-width:220px;max-width:360px;
+  }
+  .training-search svg{
+    position:absolute;left:14px;top:50%;transform:translateY(-50%);
+    width:15px;height:15px;stroke:var(--ink-faint);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+    pointer-events:none;transition:stroke .3s ease;
+  }
+  .training-search input{
+    width:100%;padding:11px 14px 11px 38px;border-radius:10px;border:1px solid var(--line-strong);
+    background:var(--surface);font-family:var(--font-body);font-size:13.5px;color:var(--ink);
+    transition:border-color .3s ease, box-shadow .3s ease;
+  }
+  .training-search input:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px var(--green-tint);}
+  .training-search input:focus + svg{stroke:var(--green);}
+  .training-filters{display:flex;gap:10px;flex-wrap:wrap;}
+  .training-filters select{
+    padding:11px 34px 11px 14px;border-radius:10px;border:1px solid var(--line-strong);
+    background:var(--surface) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%236E6B5D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>') no-repeat right 10px center / 14px;
+    font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;appearance:none;
+    transition:border-color .3s ease;
+  }
+  .training-filters select:focus{outline:none;border-color:var(--green);}
+  .training-status{font-size:12px;color:var(--ink-faint);margin:-8px 0 22px;text-align:right;}
+  .training-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:20px;}
+  .training-card{
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:22px;display:flex;flex-direction:column;gap:14px;
+    transition:transform .4s cubic-bezier(.22,1,.36,1), box-shadow .4s ease, border-color .4s ease;
+  }
+  .training-card:hover{
+    transform:translateY(-5px);border-color:var(--line-strong);
+    box-shadow:0 18px 32px -20px rgba(38,47,112,0.32);
+  }
+  .training-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+  .training-card h3{font-family:var(--font-display);font-size:16.5px;margin:0;line-height:1.35;letter-spacing:-0.01em;}
+  .training-date-pill{
+    flex-shrink:0;font-family:var(--font-mono);font-size:11px;font-weight:600;white-space:nowrap;
+    background:var(--gold-tint);color:var(--gold);border:1px solid #EAD9AE;border-radius:999px;padding:5px 12px;
+  }
+  .training-meta{display:flex;flex-direction:column;gap:4px;}
+  .training-meta span{font-size:12.5px;color:var(--ink-soft);line-height:1.5;}
+  .training-meta span b{color:var(--ink);font-weight:600;}
+  .training-card-foot{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding-top:14px;border-top:1px solid var(--line);
+  }
+  .training-participant-count{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-soft);}
+  .training-participant-count svg{width:15px;height:15px;stroke:var(--green-dark);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+  .training-participant-count b{font-family:var(--font-display);color:var(--green-dark);font-size:15px;}
+  .btn-sm{
+    font-family:var(--font-body);font-weight:700;font-size:12.5px;padding:9px 16px;border-radius:999px;
+    background:var(--green-tint);color:var(--green-dark);border:1px solid var(--line-strong);cursor:pointer;
+    transition:transform .35s cubic-bezier(.22,1,.36,1), background .3s ease, border-color .3s ease, color .3s ease, box-shadow .3s ease;
+  }
+  .btn-sm:hover{
+    background:var(--green-dark);color:#fff;border-color:var(--green-dark);
+    transform:translateY(-2px);box-shadow:0 10px 18px -10px rgba(38,47,112,0.5);
+  }
+  .training-empty, .training-error{
+    grid-column:1/-1;text-align:center;color:var(--ink-faint);font-size:13.5px;padding:44px 20px;
+    background:var(--surface);border:1px dashed var(--line-strong);border-radius:14px;
+  }
+  .training-error{color:var(--red);border-color:#E7C7C3;background:var(--red-tint);}
+  .training-skeleton{
+    grid-column:1/-1;text-align:center;color:var(--ink-faint);font-size:13px;padding:44px 20px;font-family:var(--font-mono);
+  }
+
+  /* ---- training participants modal ---- */
+  .tp-backdrop{
+    display:none;position:fixed;inset:0;z-index:80;align-items:center;justify-content:center;
+    background:rgba(41,38,32,0.5);backdrop-filter:blur(3px);padding:20px;opacity:0;transition:opacity .3s ease;
+  }
+  .tp-backdrop.show{display:flex;opacity:1;}
+  .tp-modal{
+    width:100%;max-width:700px;max-height:84vh;display:flex;flex-direction:column;
+    background:var(--paper);border:1px solid var(--line);border-radius:16px;
+    box-shadow:0 30px 60px -20px rgba(41,38,32,0.35);
+    transform:translateY(10px) scale(.98);opacity:0;transition:transform .35s cubic-bezier(.22,1,.36,1), opacity .35s ease;
+  }
+  .tp-backdrop.show .tp-modal{transform:translateY(0) scale(1);opacity:1;}
+  .tp-modal-head{
+    display:flex;align-items:flex-start;justify-content:space-between;gap:14px;
+    padding:22px 24px 16px;border-bottom:1px solid var(--line);
+  }
+  .tp-modal-head h3{font-family:var(--font-display);font-size:17.5px;margin:0 0 4px;letter-spacing:-0.01em;}
+  .tp-modal-head p{margin:0;font-size:12.5px;color:var(--ink-soft);font-family:var(--font-mono);}
+  .tp-modal-head-actions{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+  .tp-count-badge{
+    font-family:var(--font-mono);font-size:11px;color:var(--green-dark);background:var(--green-tint);
+    border:1px solid var(--line-strong);border-radius:20px;padding:5px 12px;white-space:nowrap;
+  }
+  .tp-export-btn{
+    display:flex;align-items:center;gap:6px;font-family:var(--font-body);font-weight:600;font-size:12.5px;
+    color:var(--ink);background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;
+    padding:7px 12px;cursor:pointer;white-space:nowrap;transition:background .25s ease,border-color .25s ease;
+  }
+  .tp-export-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+  .tp-export-btn:hover{background:var(--gold-tint);border-color:var(--gold);color:var(--gold);}
+  .tp-export-btn:disabled{opacity:.45;cursor:not-allowed;}
+  .tp-close{
+    flex-shrink:0;width:30px;height:30px;border-radius:50%;border:1px solid var(--line-strong);
+    background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;
+    transition:background .3s ease, color .3s ease, transform .3s ease;
+  }
+  .tp-close:hover{background:var(--red-tint);color:var(--red);transform:rotate(90deg);}
+  .tp-close svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;}
+  .tp-modal-body{padding:16px 24px 24px;overflow-y:auto;}
+  .tp-search{position:relative;margin-bottom:14px;}
+  .tp-search svg{
+    position:absolute;left:13px;top:50%;transform:translateY(-50%);
+    width:14px;height:14px;stroke:var(--ink-faint);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+  }
+  .tp-search input{
+    width:100%;padding:10px 14px 10px 36px;border-radius:10px;border:1px solid var(--line-strong);
+    background:var(--surface);font-family:var(--font-body);font-size:13px;color:var(--ink);
+  }
+  .tp-search input:focus{outline:none;border-color:var(--green);}
+  .tp-table{width:100%;border-collapse:collapse;}
+  .tp-table thead th{
+    text-align:left;font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:0.05em;
+    color:var(--ink-faint);padding:0 10px 8px;border-bottom:1px solid var(--line-strong);
+  }
+  .tp-table thead th.tp-col-num{width:34px;}
+  .tp-table tbody td{
+    padding:11px 10px;font-size:13.5px;color:var(--ink);border-bottom:1px solid var(--line);vertical-align:middle;
+  }
+  .tp-table tbody tr:last-child td{border-bottom:none;}
+  .tp-table tbody tr:hover td{background:var(--green-tint);}
+  .tp-row-num{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-faint);}
+  .tp-name-cell{display:flex;align-items:center;gap:10px;}
+  .tp-avatar{
+    flex-shrink:0;width:28px;height:28px;border-radius:50%;background:var(--green-dark);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:11px;font-weight:600;
+  }
+  .tp-sub{display:block;font-size:11.5px;color:var(--ink-faint);margin-top:1px;}
+  .tp-badge{
+    display:inline-block;font-family:var(--font-mono);font-size:10.5px;padding:3px 9px;border-radius:20px;
+    background:var(--gold-tint);color:var(--gold);border:1px solid #EBD9AF;white-space:nowrap;
+  }
+  .tp-empty{text-align:center;color:var(--ink-faint);font-size:13px;padding:30px 0;}
 </style>
 </head>
 <body>
@@ -473,6 +620,7 @@
       <a href="#features">Services</a>
       <a href="#structure">Our Ministries</a>
       <a href="#members">Insights</a>
+      <a href="#training">Training</a>
       <a href="tglccworkers.html" id="workersNavLink" onclick="return openWorkersGate(event)">Those Who Serve</a>
       <a class="icon-link" href="TGLCC_Member_Database.html" title="Connect to the system" aria-label="Open system">
         <svg viewBox="0 0 24 24"><path d="M14 4.5h5.5V10"></path><path d="M19.3 4.7 11 13"></path><path d="M8.5 5.5H6A1.5 1.5 0 0 0 4.5 7v11A1.5 1.5 0 0 0 6 19.5h11a1.5 1.5 0 0 0 1.5-1.5v-2.5"></path></svg>
@@ -659,6 +807,40 @@
   </div>
 </section>
 
+<section id="training">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="section-eyebrow">Training Records</div>
+      <h2>Every training we've conducted</h2>
+      <p>A live list of every training session, pulled straight from the church database — with dates, headcounts and full participant rosters.</p>
+    </div>
+
+    <div class="training-toolbar reveal">
+      <div class="training-search">
+        <input type="text" id="trainingSearchInput" placeholder="Search by training name, facilitator or location…" autocomplete="off">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+      </div>
+      <div class="training-filters">
+        <select id="trainingYearFilter">
+          <option value="all">All Years</option>
+        </select>
+        <select id="trainingSort">
+          <option value="date_desc">Newest First</option>
+          <option value="date_asc">Oldest First</option>
+          <option value="name_asc">Name (A–Z)</option>
+          <option value="participants_desc">Most Participants</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="training-status" id="trainingStatus">Loading live data…</div>
+
+    <div class="training-grid" id="trainingGrid">
+      <div class="training-skeleton">Loading trainings…</div>
+    </div>
+  </div>
+</section>
+
 <section class="final-cta">
   <div class="wrap">
     <h2>Ready to serve the family well?</h2>
@@ -698,6 +880,41 @@
         <span>Enter</span>
       </button>
     </form>
+  </div>
+</div>
+
+<div class="tp-backdrop" id="tpBackdrop">
+  <div class="tp-modal">
+    <div class="tp-modal-head">
+      <div>
+        <h3 id="tpTrainingTitle">Training</h3>
+        <p id="tpTrainingMeta">—</p>
+      </div>
+      <div class="tp-modal-head-actions">
+        <span class="tp-count-badge" id="tpCountBadge">0 participants</span>
+        <button type="button" class="tp-export-btn" id="tpExportBtn" onclick="exportParticipantsCSV()" disabled>
+          <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+          <span>Export</span>
+        </button>
+        <button type="button" class="tp-close" onclick="closeParticipantsModal()" aria-label="Close">
+          <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="tp-modal-body">
+      <div class="tp-search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <input type="text" id="tpSearchInput" placeholder="Search by name, contact or ministry…" autocomplete="off">
+      </div>
+      <table class="tp-table">
+        <thead>
+          <tr><th class="tp-col-num">#</th><th>Name</th><th>Contact</th><th>Ministry</th><th>Role / Status</th><th>Attendance</th></tr>
+        </thead>
+        <tbody id="tpTableBody">
+          <tr><td colspan="6"><div class="tp-empty">Loading participants…</div></td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -817,7 +1034,10 @@ document.getElementById('authBackdrop').addEventListener('click', (e) => {
   if(e.target.id === 'authBackdrop') closeWorkersGate();
 });
 document.addEventListener('keydown', (e) => {
-  if(e.key === 'Escape') closeWorkersGate();
+  if(e.key === 'Escape'){
+    closeWorkersGate();
+    closeParticipantsModal();
+  }
 });
 
 async function loadMemberStats(){
@@ -919,8 +1139,360 @@ function renderYearChart(){
     </div>`).join('');
 }
 
+/* ---- training ---- */
+let allTrainings = [];
+let trainingParticipantCounts = {};
+let currentTrainingParticipants = [];
+
+function pick(obj, keys, fallback){
+  for(const k of keys){
+    if(obj && obj[k] !== undefined && obj[k] !== null && obj[k] !== '') return obj[k];
+  }
+  return fallback;
+}
+
+// Field names are read defensively via pick() so this tab keeps working
+// whichever of the common column-naming conventions the `trainings` /
+// `training_participants` tables end up using.
+function trainingTitle(t){ return pick(t, ['title','name','training_name','topic'], 'Untitled Training'); }
+function trainingDateRaw(t){ return pick(t, ['training_date','date','session_date','held_on'], null); }
+function trainingFacilitator(t){ return pick(t, ['facilitator','trainer','conducted_by','speaker'], null); }
+function trainingLocation(t){ return pick(t, ['location','venue','place'], null); }
+// Some deployments store the roster directly on the `trainings` row as an
+// array of member ids (e.g. `participant_ids`) instead of a separate
+// `training_participants` join table. Support both.
+function trainingParticipantIds(t){
+  const val = pick(t, ['participant_ids','participants_ids','member_ids','participants'], null);
+  if(Array.isArray(val)) return val;
+  if(typeof val === 'string' && val.trim()){
+    // Handle a Postgres array literal like "{1,2,3}" or a comma-separated string.
+    return val.replace(/^\{|\}$/g, '').split(',').map(s => s.trim()).filter(Boolean);
+  }
+  return null;
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function formatTrainingDate(raw){
+  if(!raw) return 'Date TBA';
+  const d = new Date(raw);
+  if(isNaN(d.getTime())) return String(raw);
+  return d.toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
+}
+
+async function loadTrainings(){
+  const status = document.getElementById('trainingStatus');
+  const grid = document.getElementById('trainingGrid');
+  status.textContent = 'Loading live data…';
+  try{
+    const { data, error } = await supabaseClient
+      .from('trainings')
+      .select('*');
+    if(error) throw error;
+
+    allTrainings = data || [];
+
+    // Prefer counting straight from a `participant_ids` (or similar) array
+    // column on each training row. Only fall back to a separate
+    // `training_participants` join table if none of the trainings carry
+    // that array field.
+    const anyArrayField = allTrainings.some(t => trainingParticipantIds(t) !== null);
+    if(anyArrayField){
+      trainingParticipantCounts = {};
+      allTrainings.forEach(t => {
+        trainingParticipantCounts[t.id] = (trainingParticipantIds(t) || []).length;
+      });
+    }else{
+      try{
+        const { data: pData, error: pError } = await supabaseClient
+          .from('training_participants')
+          .select('training_id');
+        if(pError) throw pError;
+        trainingParticipantCounts = {};
+        (pData || []).forEach(row => {
+          const id = row.training_id;
+          trainingParticipantCounts[id] = (trainingParticipantCounts[id] || 0) + 1;
+        });
+      }catch(pe){
+        console.warn('Could not load training_participants counts:', pe);
+        trainingParticipantCounts = {};
+      }
+    }
+
+    buildTrainingYearFilter();
+    renderTrainings();
+    status.textContent = allTrainings.length
+      ? `Live data from the church database — ${allTrainings.length} training${allTrainings.length === 1 ? '' : 's'} on record.`
+      : 'No trainings recorded yet.';
+  }catch(e){
+    console.error('Failed to load trainings:', e);
+    grid.innerHTML = '<div class="training-error">Could not load training records. Please check the connection and try again.</div>';
+    status.textContent = 'Connection error — showing no data.';
+  }
+}
+
+function buildTrainingYearFilter(){
+  const sel = document.getElementById('trainingYearFilter');
+  const years = Array.from(new Set(
+    allTrainings.map(t => {
+      const raw = trainingDateRaw(t);
+      const d = raw ? new Date(raw) : null;
+      return d && !isNaN(d.getTime()) ? String(d.getFullYear()) : null;
+    }).filter(Boolean)
+  )).sort().reverse();
+  const current = sel.value || 'all';
+  sel.innerHTML = '<option value="all">All Years</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+  sel.value = years.includes(current) ? current : 'all';
+}
+
+function getFilteredSortedTrainings(){
+  const q = (document.getElementById('trainingSearchInput').value || '').trim().toLowerCase();
+  const year = document.getElementById('trainingYearFilter').value;
+  const sort = document.getElementById('trainingSort').value;
+
+  let rows = allTrainings.filter(t => {
+    const matchesQuery = !q || [trainingTitle(t), trainingFacilitator(t), trainingLocation(t)]
+      .filter(Boolean).some(v => String(v).toLowerCase().includes(q));
+    const raw = trainingDateRaw(t);
+    const d = raw ? new Date(raw) : null;
+    const matchesYear = year === 'all' || (d && !isNaN(d.getTime()) && String(d.getFullYear()) === year);
+    return matchesQuery && matchesYear;
+  });
+
+  rows = rows.slice().sort((a,b) => {
+    if(sort === 'name_asc') return trainingTitle(a).localeCompare(trainingTitle(b));
+    if(sort === 'participants_desc') return (trainingParticipantCounts[b.id]||0) - (trainingParticipantCounts[a.id]||0);
+    const da = new Date(trainingDateRaw(a) || 0).getTime();
+    const db = new Date(trainingDateRaw(b) || 0).getTime();
+    return sort === 'date_asc' ? da - db : db - da;
+  });
+
+  return rows;
+}
+
+function renderTrainings(){
+  const grid = document.getElementById('trainingGrid');
+
+  if(!allTrainings.length){
+    grid.innerHTML = '<div class="training-empty">No trainings recorded yet.</div>';
+    return;
+  }
+
+  const rows = getFilteredSortedTrainings();
+  if(!rows.length){
+    grid.innerHTML = '<div class="training-empty">No trainings match your search or filter.</div>';
+    return;
+  }
+
+  grid.innerHTML = rows.map(t => {
+    const id = t.id;
+    const title = escapeHtml(trainingTitle(t));
+    const dateLabel = escapeHtml(formatTrainingDate(trainingDateRaw(t)));
+    const facilitator = trainingFacilitator(t);
+    const location = trainingLocation(t);
+    const count = trainingParticipantCounts[id] || 0;
+    return `
+      <div class="training-card">
+        <div class="training-card-top">
+          <h3>${title}</h3>
+          <span class="training-date-pill">${dateLabel}</span>
+        </div>
+        <div class="training-meta">
+          ${facilitator ? `<span>Facilitator: <b>${escapeHtml(facilitator)}</b></span>` : ''}
+          ${location ? `<span>Location: <b>${escapeHtml(location)}</b></span>` : ''}
+        </div>
+        <div class="training-card-foot">
+          <div class="training-participant-count">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"></path><circle cx="10" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <b>${count}</b> participant${count === 1 ? '' : 's'}
+          </div>
+          <button type="button" class="btn-sm" onclick="viewParticipants('${String(id).replace(/'/g,"\\'")}')">View Participants</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function viewParticipants(trainingId){
+  const training = allTrainings.find(t => String(t.id) === String(trainingId));
+  const titleEl = document.getElementById('tpTrainingTitle');
+  const metaEl = document.getElementById('tpTrainingMeta');
+  const body = document.getElementById('tpTableBody');
+  const searchInput = document.getElementById('tpSearchInput');
+
+  const countBadge = document.getElementById('tpCountBadge');
+  const exportBtn = document.getElementById('tpExportBtn');
+
+  titleEl.textContent = training ? trainingTitle(training) : 'Training';
+  metaEl.textContent = training ? formatTrainingDate(trainingDateRaw(training)) : '';
+  searchInput.value = '';
+  countBadge.textContent = 'Loading…';
+  exportBtn.disabled = true;
+  body.innerHTML = '<tr><td colspan="6"><div class="tp-empty">Loading participants…</div></td></tr>';
+  document.getElementById('tpBackdrop').classList.add('show');
+
+  try{
+    const idsFromTraining = training ? trainingParticipantIds(training) : null;
+    let rows, membersById = {};
+
+    if(idsFromTraining !== null){
+      // Schema: trainings.participant_ids (array of member ids) — resolve
+      // straight against the members table.
+      const memberIds = Array.from(new Set(idsFromTraining.filter(v => v !== undefined && v !== null && v !== '')));
+      let members = [];
+      if(memberIds.length){
+        const { data, error } = await supabaseClient
+          .from('members')
+          .select('*')
+          .in('id', memberIds);
+        if(error) throw error;
+        members = data || [];
+      }
+      members.forEach(m => { membersById[m.id] = m; });
+      rows = memberIds.map(id => ({ member_id: id }));
+    }else{
+      // Fallback schema: a separate training_participants join table.
+      const { data, error } = await supabaseClient
+        .from('training_participants')
+        .select('*')
+        .eq('training_id', trainingId);
+      if(error) throw error;
+      rows = data || [];
+
+      const memberIds = Array.from(new Set(rows
+        .map(r => r.member_id)
+        .filter(v => v !== undefined && v !== null)));
+
+      if(memberIds.length){
+        try{
+          const { data: members, error: mError } = await supabaseClient
+            .from('members')
+            .select('*')
+            .in('id', memberIds);
+          if(mError) throw mError;
+          (members || []).forEach(m => { membersById[m.id] = m; });
+        }catch(me){
+          console.warn('Could not resolve member names for participants:', me);
+        }
+      }
+    }
+
+    currentTrainingParticipants = rows.map(r => {
+      const member = r.member_id !== undefined ? membersById[r.member_id] : null;
+      const name = pick(r, ['participant_name','full_name','name'], null)
+        || (member && (pick(member, ['full_name'], null)
+            || [member.first_name, member.last_name].filter(Boolean).join(' ')
+            || pick(member, ['name'], null)))
+        || 'Unnamed Participant';
+      const roleStatus = pick(r, ['role','status'], null)
+        || (member ? (member.leader ? 'Leader' : member.worker ? 'Worker' : 'Member') : '—');
+      const contact = pick(r, ['contact','phone','phone_number','mobile'], null)
+        || (member && pick(member, ['contact','phone','phone_number','mobile','email'], null))
+        || '—';
+      const ministry = pick(r, ['ministry','department'], null)
+        || (member && pick(member, ['ministry','department','cell_group'], null))
+        || '—';
+      const attendanceRaw = pick(r, ['attendance','attended','present'], null);
+      const attendance = attendanceRaw === null ? '—'
+        : (typeof attendanceRaw === 'boolean' ? (attendanceRaw ? 'Present' : 'Absent') : String(attendanceRaw));
+      return { name, roleStatus, contact, ministry, attendance };
+    });
+
+    renderParticipantsTable();
+  }catch(e){
+    console.error('Failed to load participants:', e);
+    document.getElementById('tpCountBadge').textContent = '0 participants';
+    body.innerHTML = '<tr><td colspan="6"><div class="tp-empty">Could not load participants for this training.</div></td></tr>';
+  }
+}
+
+function initials(name){
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if(!parts.length) return '?';
+  return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+}
+
+function renderParticipantsTable(){
+  const body = document.getElementById('tpTableBody');
+  const countBadge = document.getElementById('tpCountBadge');
+  const exportBtn = document.getElementById('tpExportBtn');
+  const q = (document.getElementById('tpSearchInput').value || '').trim().toLowerCase();
+  const rows = currentTrainingParticipants.filter(p =>
+    !q
+    || p.name.toLowerCase().includes(q)
+    || String(p.roleStatus).toLowerCase().includes(q)
+    || String(p.contact).toLowerCase().includes(q)
+    || String(p.ministry).toLowerCase().includes(q));
+
+  const total = currentTrainingParticipants.length;
+  countBadge.textContent = `${total} participant${total === 1 ? '' : 's'}`;
+  exportBtn.disabled = !total;
+
+  if(!total){
+    body.innerHTML = '<tr><td colspan="6"><div class="tp-empty">No participants recorded for this training yet.</div></td></tr>';
+    return;
+  }
+  if(!rows.length){
+    body.innerHTML = '<tr><td colspan="6"><div class="tp-empty">No participants match your search.</div></td></tr>';
+    return;
+  }
+  body.innerHTML = rows.map((p, i) => `
+    <tr>
+      <td class="tp-row-num">${i + 1}</td>
+      <td>
+        <div class="tp-name-cell">
+          <span class="tp-avatar">${escapeHtml(initials(p.name))}</span>
+          <span>${escapeHtml(p.name)}</span>
+        </div>
+      </td>
+      <td>${escapeHtml(p.contact)}</td>
+      <td>${escapeHtml(p.ministry)}</td>
+      <td><span class="tp-badge">${escapeHtml(p.roleStatus)}</span></td>
+      <td>${escapeHtml(p.attendance)}</td>
+    </tr>`).join('');
+}
+
+function exportParticipantsCSV(){
+  if(!currentTrainingParticipants.length) return;
+  const trainingName = document.getElementById('tpTrainingTitle').textContent || 'Training';
+  const header = ['#','Name','Contact','Ministry','Role / Status','Attendance'];
+  const csvRows = currentTrainingParticipants.map((p, i) =>
+    [i + 1, p.name, p.contact, p.ministry, p.roleStatus, p.attendance]);
+
+  const escapeCsv = (val) => {
+    const s = String(val ?? '');
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const csv = [header, ...csvRows].map(row => row.map(escapeCsv).join(',')).join('\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const safeName = trainingName.replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'training';
+  a.href = url;
+  a.download = `${safeName}_participants.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function closeParticipantsModal(){
+  document.getElementById('tpBackdrop').classList.remove('show');
+}
+
+document.getElementById('trainingSearchInput').addEventListener('input', renderTrainings);
+document.getElementById('trainingYearFilter').addEventListener('change', renderTrainings);
+document.getElementById('trainingSort').addEventListener('change', renderTrainings);
+document.getElementById('tpSearchInput').addEventListener('input', renderParticipantsTable);
+document.getElementById('tpBackdrop').addEventListener('click', (e) => {
+  if(e.target.id === 'tpBackdrop') closeParticipantsModal();
+});
+
 loadMemberStats();
 loadAttendance();
+loadTrainings();
 
 /* ---- elegant scroll interactions ---- */
 const revealEls = document.querySelectorAll('.reveal');
