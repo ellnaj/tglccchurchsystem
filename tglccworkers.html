@@ -359,7 +359,7 @@ function yearsAttendingText(row, isActive){
 
   if(!isActive){
     if(years < 1) return `Attended until ${endYear}`;
-    return years === 1 ? `Attended ${startYear}–${endYear} (1 yr)` : `Attended ${startYear}–${endYear} `;
+    return years === 1 ? `Attended ${startYear}–${endYear} ` : `Attended ${startYear}–${endYear} `;
   }
 
   if(years < 1) return `Attending since ${startYear}`;
