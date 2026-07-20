@@ -24,6 +24,8 @@
     --gold-tint:#FBF0DA;
     --red:#A33F3F;
     --red-tint:#F7E8E6;
+    --emerald:#2E7D46;
+    --emerald-tint:#E1F3E6;
     --font-display:'Poppins', sans-serif;
     --font-body:'Inter', sans-serif;
     --font-mono:'IBM Plex Mono', monospace;
@@ -601,6 +603,15 @@
     display:inline-block;font-family:var(--font-mono);font-size:10.5px;padding:3px 9px;border-radius:20px;
     background:var(--gold-tint);color:var(--gold);border:1px solid #EBD9AF;white-space:nowrap;
   }
+  .tp-badge-progress{
+    display:inline-block;font-family:var(--font-mono);font-size:10.5px;padding:3px 9px;border-radius:20px;
+    background:var(--emerald-tint);color:var(--emerald);border:1px solid #BEE2C8;white-space:nowrap;
+  }
+  .tp-badge-status{
+    display:inline-block;font-family:var(--font-mono);font-size:10.5px;padding:3px 9px;border-radius:20px;white-space:nowrap;
+  }
+  .tp-badge-status.is-active{background:var(--emerald-tint);color:var(--emerald);border:1px solid #BEE2C8;}
+  .tp-badge-status.is-inactive{background:var(--red-tint);color:var(--red);border:1px solid #E7C7C3;}
   .tp-empty{text-align:center;color:var(--ink-faint);font-size:13px;padding:30px 0;}
 </style>
 </head>
@@ -908,7 +919,7 @@
       </div>
       <table class="tp-table">
         <thead>
-          <tr><th class="tp-col-num">#</th><th>Name</th><th>Contact</th><th>Progress</th><th>Position</th><th>Status</th></tr>
+          <tr><th class="tp-col-num">#</th><th>Name</th><th>Contact</th><th>Position</th><th>Status</th><th>Progress</th></tr>
         </thead>
         <tbody id="tpTableBody">
           <tr><td colspan="6"><div class="tp-empty">Loading participants…</div></td></tr>
@@ -1447,18 +1458,18 @@ function renderParticipantsTable(){
         </div>
       </td>
       <td>${escapeHtml(p.contact)}</td>
-      <td>${escapeHtml(p.progress)}</td>
       <td><span class="tp-badge">${escapeHtml(p.roleStatus)}</span></td>
-      <td>${escapeHtml(p.status)}</td>
+      <td><span class="tp-badge-status ${String(p.status).toLowerCase() === 'inactive' ? 'is-inactive' : 'is-active'}">${escapeHtml(p.status)}</span></td>
+      <td><span class="tp-badge-progress">${escapeHtml(p.progress)}</span></td>
     </tr>`).join('');
 }
 
 function exportParticipantsCSV(){
   if(!currentTrainingParticipants.length) return;
   const trainingName = document.getElementById('tpTrainingTitle').textContent || 'Training';
-  const header = ['#','Name','Contact','Progress','Position','Status'];
+  const header = ['#','Name','Contact','Position','Status','Progress'];
   const csvRows = currentTrainingParticipants.map((p, i) =>
-    [i + 1, p.name, p.contact, p.progress, p.roleStatus, p.status]);
+    [i + 1, p.name, p.contact, p.roleStatus, p.status, p.progress]);
 
   const escapeCsv = (val) => {
     const s = String(val ?? '');
