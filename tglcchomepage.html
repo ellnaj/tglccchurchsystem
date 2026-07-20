@@ -904,11 +904,11 @@
     <div class="tp-modal-body">
       <div class="tp-search">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
-        <input type="text" id="tpSearchInput" placeholder="Search by name, contact or ministry…" autocomplete="off">
+        <input type="text" id="tpSearchInput" placeholder="Search by name, contact or progress…" autocomplete="off">
       </div>
       <table class="tp-table">
         <thead>
-          <tr><th class="tp-col-num">#</th><th>Name</th><th>Contact</th><th>Ministry</th><th>Role / Status</th><th>Attendance</th></tr>
+          <tr><th class="tp-col-num">#</th><th>Name</th><th>Contact</th><th>Progress</th><th>Position</th><th>Status</th></tr>
         </thead>
         <tbody id="tpTableBody">
           <tr><td colspan="6"><div class="tp-empty">Loading participants…</div></td></tr>
@@ -1390,13 +1390,13 @@ async function viewParticipants(trainingId){
       const contact = pick(r, ['contact','phone','phone_number','mobile'], null)
         || (member && pick(member, ['contact','phone','phone_number','mobile','email'], null))
         || '—';
-      const ministry = pick(r, ['ministry','department'], null)
-        || (member && pick(member, ['ministry','department','cell_group'], null))
-        || '—';
-      const attendanceRaw = pick(r, ['attendance','attended','present'], null);
-      const attendance = attendanceRaw === null ? '—'
-        : (typeof attendanceRaw === 'boolean' ? (attendanceRaw ? 'Present' : 'Absent') : String(attendanceRaw));
-      return { name, roleStatus, contact, ministry, attendance };
+      const progress = pick(r, ['progress','completion_status','training_progress','training_status'], null)
+        || 'Completed';
+      const statusRaw = pick(r, ['status','active'], null);
+      const status = statusRaw !== null
+        ? (typeof statusRaw === 'boolean' ? (statusRaw ? 'Active' : 'Inactive') : String(statusRaw))
+        : (member && member.active !== undefined ? (member.active !== false ? 'Active' : 'Inactive') : 'Active');
+      return { name, roleStatus, contact, progress, status };
     });
 
     renderParticipantsTable();
@@ -1423,7 +1423,7 @@ function renderParticipantsTable(){
     || p.name.toLowerCase().includes(q)
     || String(p.roleStatus).toLowerCase().includes(q)
     || String(p.contact).toLowerCase().includes(q)
-    || String(p.ministry).toLowerCase().includes(q));
+    || String(p.progress).toLowerCase().includes(q));
 
   const total = currentTrainingParticipants.length;
   countBadge.textContent = `${total} participant${total === 1 ? '' : 's'}`;
@@ -1447,18 +1447,18 @@ function renderParticipantsTable(){
         </div>
       </td>
       <td>${escapeHtml(p.contact)}</td>
-      <td>${escapeHtml(p.ministry)}</td>
+      <td>${escapeHtml(p.progress)}</td>
       <td><span class="tp-badge">${escapeHtml(p.roleStatus)}</span></td>
-      <td>${escapeHtml(p.attendance)}</td>
+      <td>${escapeHtml(p.status)}</td>
     </tr>`).join('');
 }
 
 function exportParticipantsCSV(){
   if(!currentTrainingParticipants.length) return;
   const trainingName = document.getElementById('tpTrainingTitle').textContent || 'Training';
-  const header = ['#','Name','Contact','Ministry','Role / Status','Attendance'];
+  const header = ['#','Name','Contact','Progress','Position','Status'];
   const csvRows = currentTrainingParticipants.map((p, i) =>
-    [i + 1, p.name, p.contact, p.ministry, p.roleStatus, p.attendance]);
+    [i + 1, p.name, p.contact, p.progress, p.roleStatus, p.status]);
 
   const escapeCsv = (val) => {
     const s = String(val ?? '');
