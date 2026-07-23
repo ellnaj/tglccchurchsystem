@@ -157,6 +157,15 @@
     background:var(--green-tint);border:1px solid var(--green);border-radius:16px;
     padding:20px;margin-bottom:18px;text-align:center;
   }
+  .confirm-card .c-avatar{
+    width:84px;height:84px;border-radius:50%;margin:0 auto 14px;
+    background:var(--surface);border:2px solid var(--green);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+  }
+  .confirm-card .c-avatar img{width:100%;height:100%;object-fit:cover;display:block;}
+  .confirm-card .c-avatar .initials{
+    font-family:var(--font-display);font-weight:700;font-size:28px;color:var(--green-dark);
+  }
   .confirm-card .c-label{font-size:12px;color:var(--green-dark);font-weight:600;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:6px;}
   .confirm-card .c-name{font-family:var(--font-display);font-weight:700;font-size:22px;color:var(--ink);margin-bottom:2px;}
   .confirm-card .c-no{font-family:var(--font-mono);font-size:12px;color:var(--ink-soft);margin-bottom:18px;}
@@ -172,6 +181,15 @@
   .success-check{
     width:52px;height:52px;border-radius:50%;background:var(--green-tint);color:var(--green-dark);
     display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 14px;
+  }
+  .success-avatar{
+    width:84px;height:84px;border-radius:50%;margin:0 auto 14px;
+    background:var(--green-tint);border:2px solid var(--green);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+  }
+  .success-avatar img{width:100%;height:100%;object-fit:cover;display:block;}
+  .success-avatar .initials{
+    font-family:var(--font-display);font-weight:700;font-size:28px;color:var(--green-dark);
   }
   .success-card h3{font-family:var(--font-display);font-weight:600;font-size:19px;margin:0 0 4px;}
   .success-card p{color:var(--ink-soft);font-size:13px;margin:0;}
@@ -267,7 +285,7 @@ const SUPABASE_URL = 'https://vmbxnudsfsyknxekueqs.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZtYnhudWRzZnN5a254ZWt1ZXFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0MDU2MTIsImV4cCI6MjA5ODk4MTYxMn0.OS8hP5rFKoCQuZKzxKvGmyoTdD24UT1qlbVd2KAGUzo';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let members = [];            // active members: {id, member_no, name}
+let members = [];            // active members: {id, member_no, name, photo}
 let checkedInIds = new Set(); // member ids already checked in for currentDate
 let currentDate = todayStr();
 let selectedMember = null;    // member picked from search results, awaiting confirm
@@ -453,7 +471,7 @@ async function loadMembers(){
   try{
     const { data, error } = await supabaseClient
       .from('members')
-      .select('id,member_no,name,active')
+      .select('id,member_no,name,active,photo')
       .eq('active', true)
       .order('name', { ascending: true });
     if(error) throw error;
@@ -534,8 +552,12 @@ function selectMember(id){
   $('searchBox').value = '';
   $('resultsBox').style.display = 'none';
   $('emptyState').style.display = 'none';
+  const avatar = m.photo
+    ? `<img src="${escapeHtml(m.photo)}" alt="${escapeHtml(m.name)}" onerror="this.parentElement.innerHTML='<span class=&quot;initials&quot;>${escapeHtml(initials(m.name))}</span>'">`
+    : `<span class="initials">${escapeHtml(initials(m.name))}</span>`;
   $('checkinFlow').innerHTML = `
     <div class="confirm-card">
+      <div class="c-avatar">${avatar}</div>
       <div class="c-label">Confirm your attendance</div>
       <div class="c-name">${escapeHtml(m.name)}</div>
       <div class="c-no">${m.member_no ? 'Member No. ' + m.member_no : ''} · ${fmtDateLabel(currentDate)}</div>
@@ -591,10 +613,18 @@ async function confirmCheckIn(){
   }
 }
 
+function initials(name){
+  return String(name||'').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+}
+
 function showSuccess(m){
   selectedMember = null;
+  const avatar = m.photo
+    ? `<img src="${escapeHtml(m.photo)}" alt="${escapeHtml(m.name)}" onerror="this.parentElement.innerHTML='<span class=&quot;initials&quot;>${escapeHtml(initials(m.name))}</span>'">`
+    : `<span class="initials">${escapeHtml(initials(m.name))}</span>`;
   $('checkinFlow').innerHTML = `
     <div class="success-card">
+      <div class="success-avatar">${avatar}</div>
       <div class="success-check">&#10003;</div>
       <h3>Thanks, ${escapeHtml(m.name)}!</h3>
       <p>Your attendance for ${fmtDateLabel(currentDate)} has been recorded.</p>
