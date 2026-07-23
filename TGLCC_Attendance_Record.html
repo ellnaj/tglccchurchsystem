@@ -159,6 +159,15 @@
     padding:20px;margin-bottom:18px;text-align:center;
   }
   .confirm-card .c-label{font-size:12px;color:var(--green-dark);font-weight:600;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:6px;}
+  .confirm-avatar{
+    width:76px;height:76px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 12px;
+    border:3px solid var(--surface);box-shadow:0 0 0 1px var(--green);background:var(--surface);
+  }
+  .confirm-avatar-fallback{
+    width:76px;height:76px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    margin:0 auto 12px;background:var(--green);color:#fff;font-family:var(--font-display);font-weight:600;
+    font-size:26px;border:3px solid var(--surface);box-shadow:0 0 0 1px var(--green);
+  }
   .confirm-card .c-name{font-family:var(--font-display);font-weight:700;font-size:22px;color:var(--ink);margin-bottom:2px;}
   .confirm-card .c-no{font-family:var(--font-mono);font-size:12px;color:var(--ink-soft);margin-bottom:18px;}
   .confirm-actions{display:flex;gap:10px;justify-content:center;}
@@ -400,6 +409,16 @@ function escapeHtml(s){
   return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+// ---- Initials fallback for members with no photo on file (or whose
+// photo URL fails to load) ----
+function getInitials(name){
+  const parts = String(name||'').trim().split(/\s+/).filter(Boolean);
+  if(!parts.length) return '?';
+  const first = parts[0][0] || '';
+  const last = parts.length > 1 ? parts[parts.length-1][0] : '';
+  return (first + last).toUpperCase();
+}
+
 function toast(msg){
   const t = $('toast');
   t.textContent = msg;
@@ -508,7 +527,7 @@ async function loadMembers(){
   try{
     const { data, error } = await supabaseClient
       .from('members')
-      .select('id,member_no,name,active')
+      .select('id,member_no,name,active,photo')
       .eq('active', true)
       .order('name', { ascending: true });
     if(error) throw error;
@@ -589,9 +608,21 @@ function selectMember(id){
   $('searchBox').value = '';
   $('resultsBox').style.display = 'none';
   $('emptyState').style.display = 'none';
+
+  // Photo comes straight from members.photo (public Supabase URL). If
+  // it's missing, or the URL fails to actually load, fall back to an
+  // initials avatar instead of leaving a broken image.
+  const photoUrl = (m.photo || '').trim();
+  const initials = getInitials(m.name);
+  const avatarHtml = photoUrl
+    ? `<img class="confirm-avatar" src="${escapeHtml(photoUrl)}" alt="${escapeHtml(m.name)}"
+         onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'confirm-avatar-fallback',textContent:'${escapeHtml(initials)}'}))">`
+    : `<div class="confirm-avatar-fallback">${escapeHtml(initials)}</div>`;
+
   $('checkinFlow').innerHTML = `
     <div class="confirm-card">
       <div class="c-label">Confirm your attendance</div>
+      ${avatarHtml}
       <div class="c-name">${escapeHtml(m.name)}</div>
       <div class="c-no">${m.member_no ? 'Member No. ' + m.member_no : ''} · ${fmtDateLabel(currentDate)}</div>
       <div class="confirm-actions">
