@@ -812,6 +812,11 @@
       <button class="btn" id="loadFileBtn" onclick="triggerLoadFromDisk()">Load</button>
       <input type="file" id="backupInput" accept=".json" onchange="handleRestore(event)">
       <button class="btn btn-primary" id="addMemberBtn" onclick="openForm()">+ Add member</button>
+      <select class="filter" id="sortBy" onchange="renderRoster()">
+        <option value="name_asc">Sort: Alphabetical (A–Z)</option>
+        <option value="started_desc">Sort: Started Attending (Newest First)</option>
+        <option value="started_asc">Sort: Started Attending (Oldest First)</option>
+      </select>
     </div>
     <div class="hint" style="margin-top:-6px;">Data is saved automatically to Supabase as you add, edit, or delete members — including photos. Click Backup any time to save a church-roster-data.json snapshot to your computer. Click Load only when you need to restore data from a backup file — it will replace all current data with the contents of that file.</div>
 
@@ -2636,7 +2641,21 @@ function renderRoster(){
     const matchesMinistry = matchesMinistryFilter(m, ministryFilter);
     return matchesQ && matchesMinistry;
   });
-  list.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const sortBy = $('sortBy') ? $('sortBy').value : 'name_asc';
+  if(sortBy === 'started_desc' || sortBy === 'started_asc'){
+    const dir = sortBy === 'started_desc' ? -1 : 1;
+    list.sort((a,b)=>{
+      const da = a.startedAttending ? new Date(a.startedAttending + 'T00:00:00').getTime() : null;
+      const db = b.startedAttending ? new Date(b.startedAttending + 'T00:00:00').getTime() : null;
+      if(da === null && db === null) return (a.name||'').localeCompare(b.name||'');
+      if(da === null) return 1;  // members without a date go last
+      if(db === null) return -1;
+      if(da !== db) return dir * (da - db);
+      return (a.name||'').localeCompare(b.name||'');
+    });
+  } else {
+    list.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  }
 
   const body = $('rosterBody');
   body.innerHTML = list.map(m=>`
