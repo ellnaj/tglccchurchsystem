@@ -812,11 +812,6 @@
       <button class="btn" id="loadFileBtn" onclick="triggerLoadFromDisk()">Load</button>
       <input type="file" id="backupInput" accept=".json" onchange="handleRestore(event)">
       <button class="btn btn-primary" id="addMemberBtn" onclick="openForm()">+ Add member</button>
-      <select class="filter" id="sortBy" onchange="renderRoster()">
-        <option value="name_asc">Sort: Alphabetical (A–Z)</option>
-        <option value="started_desc">Sort: Started Attending (Newest First)</option>
-        <option value="started_asc">Sort: Started Attending (Oldest First)</option>
-      </select>
     </div>
     <div class="hint" style="margin-top:-6px;">Data is saved automatically to Supabase as you add, edit, or delete members — including photos. Click Backup any time to save a church-roster-data.json snapshot to your computer. Click Load only when you need to restore data from a backup file — it will replace all current data with the contents of that file.</div>
 
@@ -926,7 +921,7 @@
 
       <div class="att-panel">
         <div class="att-panel-head"><h3>Monthly breakdown by week</h3></div>
-        <div class="hint" style="margin-top:-4px;margin-bottom:10px;">Total attendees for each service week in the selected month (Sunday–Saturday, not just the Friday date), with attendance % of active members — so you can see which week ran higher or lower.</div>
+        <div class="hint" style="margin-top:-4px;margin-bottom:10px;">Total attendees for each service week in the selected month (Saturday–Friday, not just the Friday date), with attendance % of active members — so you can see which week ran higher or lower.</div>
         <div class="toolbar" style="margin-bottom:12px;">
           <input type="month" id="overviewMonthPicker" onchange="renderOverviewMonthlyBreakdown()">
         </div>
@@ -991,7 +986,7 @@
 
       <div class="att-panel">
         <div class="att-panel-head"><h3>Weeks by attendance</h3></div>
-        <div class="hint" style="margin-top:-4px;margin-bottom:10px;">Total attendees for each service week in the selected month — highlights the highest and lowest week.</div>
+        <div class="hint" style="margin-top:-4px;margin-bottom:10px;">Total attendees for each service week in the selected month (Saturday–Friday, not just the Friday date) — highlights the highest and lowest week.</div>
         <div class="toolbar" style="margin-bottom:12px;">
           <input type="month" id="insightsWeeksMonthPicker" onchange="renderInsightsWeeksPanel()">
         </div>
@@ -1976,12 +1971,28 @@ let allAttendanceRecords = null;
 async function loadAllAttendanceRecords(force){
   if(allAttendanceRecords && !force) return allAttendanceRecords;
   try{
-    const { data, error } = await supabaseClient
-      .from('attendance_records')
-      .select('member_id,member_name,attendance_date,created_at')
-      .order('attendance_date', { ascending: true });
-    if(error) throw error;
-    allAttendanceRecords = data || [];
+    // Supabase/PostgREST caps how many rows a single request can return
+    // (commonly 1000). With years of weekly attendance history the table
+    // can easily exceed that, and since results are ordered oldest-first,
+    // a single request would silently cut off the MOST RECENT records —
+    // e.g. this month's Fridays would look under-counted. Page through in
+    // batches until a page comes back short of the page size.
+    const PAGE_SIZE = 1000;
+    let all = [];
+    let from = 0;
+    while(true){
+      const { data, error } = await supabaseClient
+        .from('attendance_records')
+        .select('member_id,member_name,attendance_date,created_at')
+        .order('attendance_date', { ascending: true })
+        .range(from, from + PAGE_SIZE - 1);
+      if(error) throw error;
+      const batch = data || [];
+      all = all.concat(batch);
+      if(batch.length < PAGE_SIZE) break; // last page
+      from += PAGE_SIZE;
+    }
+    allAttendanceRecords = all;
   }catch(e){
     console.error('Failed to load attendance history:', e);
     toast('⚠ Could not load attendance history — check your connection');
@@ -2079,7 +2090,7 @@ async function renderAttendanceLog(){
   renderOverviewMonthlyBreakdown();
 }
 
-// ---- Overview: weekly combo breakdown for a chosen month (Friday service) ----
+// ---- Overview: weekly combo breakdown for a chosen month (Friday service, Saturday–Friday week) ----
 async function renderOverviewMonthlyBreakdown(){
   const monthInput = $('overviewMonthPicker');
   if(monthInput && !monthInput.value){
@@ -2102,24 +2113,19 @@ async function renderOverviewMonthlyBreakdown(){
   }
 
   const weeks = fridays.map((dateStr, idx)=>{
-    // Count attendance for the whole service week (Sun–Sat) that this
-    // Friday falls in, not just the Friday date itself — so check-ins
-    // recorded on other days of that same week (e.g. a make-up day or
-    // a second gathering) still count toward that week's total/%.
+    // Count attendance for the whole service week ending on this Friday
+    // (Saturday through Friday, 7 days), not just the Friday date itself —
+    // every attendance record in that window counts toward the Friday
+    // total, so a check-in logged on any other day that week (e.g. a
+    // make-up day or a second gathering) automatically adds to it.
     const friday = new Date(dateStr + 'T00:00:00');
     const weekStart = new Date(friday);
-    weekStart.setDate(friday.getDate() - friday.getDay()); // Sunday of that week
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6); // Saturday of that week
+    weekStart.setDate(friday.getDate() - 6); // Saturday of that week
+    const weekEnd = friday; // the Friday itself
     const weekStartStr = isoDate(weekStart);
     const weekEndStr = isoDate(weekEnd);
 
-    const attendeesThisWeek = new Set(
-      records
-        .filter(r => r.attendance_date >= weekStartStr && r.attendance_date <= weekEndStr)
-        .map(r => r.member_id)
-    );
-    const total = attendeesThisWeek.size;
+    const total = records.filter(r => r.attendance_date >= weekStartStr && r.attendance_date <= weekEndStr).length;
     const pct = activeTotal ? Math.round((total / activeTotal) * 1000) / 10 : 0;
     return { week: idx+1, dateStr, total, pct };
   });
@@ -2321,6 +2327,9 @@ function renderRankedBars(containerId, items, emptyMessage){
 }
 
 // ---- Insights pattern panel: weeks (within a month) high/low ----
+// Each bar totals the service week ending on that Friday (Saturday through
+// Friday, 7 days) — records logged on any other day that week automatically
+// fold into that Friday's count, same as the Overview weekly breakdown.
 function renderInsightsWeeksPanel(){
   if(!allAttendanceRecords) return;
   const picker = $('insightsWeeksMonthPicker');
@@ -2336,9 +2345,12 @@ function renderInsightsWeeksPanel(){
   while(d <= monthEnd){
     if(SERVICE_WEEKDAYS.includes(d.getDay())){
       const dayStr = isoDate(d);
+      const weekStart = new Date(d);
+      weekStart.setDate(d.getDate() - 6); // Saturday of that week
+      const weekStartStr = isoDate(weekStart);
       weeks.push({
         label: d.toLocaleDateString('en-US',{month:'short',day:'numeric'}),
-        count: countRecordsInRange(allAttendanceRecords, dayStr, dayStr)
+        count: countRecordsInRange(allAttendanceRecords, weekStartStr, dayStr)
       });
     }
     d.setDate(d.getDate() + 1);
@@ -2641,21 +2653,7 @@ function renderRoster(){
     const matchesMinistry = matchesMinistryFilter(m, ministryFilter);
     return matchesQ && matchesMinistry;
   });
-  const sortBy = $('sortBy') ? $('sortBy').value : 'name_asc';
-  if(sortBy === 'started_desc' || sortBy === 'started_asc'){
-    const dir = sortBy === 'started_desc' ? -1 : 1;
-    list.sort((a,b)=>{
-      const da = a.startedAttending ? new Date(a.startedAttending + 'T00:00:00').getTime() : null;
-      const db = b.startedAttending ? new Date(b.startedAttending + 'T00:00:00').getTime() : null;
-      if(da === null && db === null) return (a.name||'').localeCompare(b.name||'');
-      if(da === null) return 1;  // members without a date go last
-      if(db === null) return -1;
-      if(da !== db) return dir * (da - db);
-      return (a.name||'').localeCompare(b.name||'');
-    });
-  } else {
-    list.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
-  }
+  list.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
 
   const body = $('rosterBody');
   body.innerHTML = list.map(m=>`
