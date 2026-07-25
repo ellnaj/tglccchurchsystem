@@ -326,6 +326,35 @@
   .year-row .n{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-soft);width:34px;text-align:right;}
   .analytics-empty{color:var(--ink-faint);font-size:13px;text-align:center;padding:30px 0;}
   .analytics-status{font-size:11.5px;color:var(--ink-faint);margin-top:14px;text-align:right;}
+  .friday-panel{margin-top:20px;}
+  .friday-title-group{display:flex;align-items:center;gap:10px;}
+  .friday-badge{
+    font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;
+    color:var(--green-dark);background:var(--green-tint);border:1px solid var(--line-strong);
+    padding:3px 9px;border-radius:999px;
+  }
+  .friday-filters{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .friday-table-wrap{overflow-x:auto;max-height:420px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;}
+  .friday-table{width:100%;border-collapse:collapse;}
+  .friday-table thead th{
+    position:sticky;top:0;background:var(--surface);
+    text-align:left;font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:0.05em;
+    color:var(--ink-faint);padding:10px;border-bottom:1px solid var(--line-strong);
+  }
+  .friday-table thead th.fr-col-num{width:34px;}
+  .friday-table thead th.fr-col-count{text-align:right;}
+  .friday-table thead th.fr-col-trend{text-align:right;width:90px;}
+  .friday-table tbody td{
+    padding:11px 10px;font-size:13.5px;color:var(--ink);border-bottom:1px solid var(--line);vertical-align:middle;
+    font-family:var(--font-mono);
+  }
+  .friday-table tbody td.fr-col-count{text-align:right;font-weight:600;color:var(--green-dark);}
+  .friday-table tbody td.fr-col-trend{text-align:right;font-size:12px;}
+  .friday-table tbody tr:last-child td{border-bottom:none;}
+  .friday-table tbody tr:hover td{background:var(--green-tint);}
+  .fr-trend-up{color:var(--emerald);font-weight:600;}
+  .fr-trend-down{color:var(--red);font-weight:600;}
+  .fr-trend-flat{color:var(--ink-faint);}
 
   /* ---- final cta ---- */
   .final-cta{
@@ -797,6 +826,38 @@
       </div>
     </div>
 
+    <div class="analytics-panel friday-panel reveal">
+      <div class="analytics-head">
+        <div class="friday-title-group">
+          <h3>Weekly Attendance Report</h3>
+          <span class="friday-badge">Fridays</span>
+        </div>
+        <div class="friday-filters">
+          <select id="fridayYearSelect"></select>
+          <select id="fridayMonthSelect"></select>
+        </div>
+      </div>
+      <p class="analytics-sub">Attendee counts for every Friday service, grouped by date.</p>
+
+      <div class="friday-table-wrap">
+        <table class="friday-table">
+          <thead>
+            <tr>
+              <th class="fr-col-num">#</th>
+              <th>Friday Date</th>
+              <th class="fr-col-count">Attendees</th>
+              <th class="fr-col-trend">Trend</th>
+            </tr>
+          </thead>
+          <tbody id="fridayTableBody">
+            <tr><td colspan="4"><div class="analytics-empty">Loading Friday attendance…</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="analytics-status" id="fridayStatus">Loading live data…</div>
+    </div>
+
     <div class="analytics-panel reveal">
       <div class="analytics-grid">
         <div>
@@ -1086,12 +1147,100 @@ async function loadAttendance(){
     renderYearChart();
     document.getElementById('analyticsStatus').textContent =
       attendanceRecords.length ? 'Live data from the church database.' : 'No attendance records yet.';
+    buildFridayFilters();
+    renderFridayReport();
   }catch(e){
     console.error('Failed to load attendance:', e);
     document.getElementById('monthChart').innerHTML = '<div class="analytics-empty">Could not load attendance data.</div>';
     document.getElementById('yearChart').innerHTML = '<div class="analytics-empty">Could not load attendance data.</div>';
     document.getElementById('analyticsStatus').textContent = 'Connection error — showing no data.';
+    document.getElementById('fridayTableBody').innerHTML = '<tr><td colspan="4"><div class="analytics-empty">Could not load attendance data.</div></td></tr>';
+    document.getElementById('fridayStatus').textContent = 'Connection error — showing no data.';
   }
+}
+
+/* ---- weekly (Friday) attendance report ----
+   Reuses the attendance_date rows already fetched for the monthly/yearly
+   charts above — each row represents one attendee check-in for a date —
+   and groups those that fall on a Friday by exact date. */
+const FRIDAY_MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function isFridayDateStr(dateStr){
+  if(!dateStr) return false;
+  const d = new Date(dateStr + 'T00:00:00');
+  return !isNaN(d.getTime()) && d.getDay() === 5;
+}
+
+function getFridayCounts(year, month){
+  const counts = {};
+  attendanceRecords.forEach(r => {
+    const date = r.attendance_date;
+    if(!date) return;
+    if(year && date.slice(0,4) !== year) return;
+    if(month && date.slice(5,7) !== month) return;
+    if(!isFridayDateStr(date)) return;
+    counts[date] = (counts[date] || 0) + 1;
+  });
+  // Sort by date descending (most recent Friday first)
+  return Object.entries(counts).sort((a,b) => (a[0] < b[0] ? 1 : -1));
+}
+
+function buildFridayFilters(){
+  const yearSel = document.getElementById('fridayYearSelect');
+  const monthSel = document.getElementById('fridayMonthSelect');
+
+  const now = new Date();
+  const currentYear = String(now.getFullYear());
+  const currentMonth = String(now.getMonth() + 1).padStart(2, '0');
+
+  const fridayDates = attendanceRecords.filter(r => isFridayDateStr(r.attendance_date)).map(r => r.attendance_date);
+  const years = Array.from(new Set(fridayDates.map(d => d.slice(0,4)))).sort().reverse();
+  if(!years.includes(currentYear)) years.unshift(currentYear);
+
+  yearSel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+  yearSel.value = currentYear;
+
+  monthSel.innerHTML = FRIDAY_MONTH_NAMES.map((name, i) => {
+    const val = String(i+1).padStart(2,'0');
+    return `<option value="${val}">${name}</option>`;
+  }).join('');
+  monthSel.value = currentMonth;
+
+  yearSel.onchange = renderFridayReport;
+  monthSel.onchange = renderFridayReport;
+}
+
+function renderFridayReport(){
+  const yearSel = document.getElementById('fridayYearSelect');
+  const monthSel = document.getElementById('fridayMonthSelect');
+  const year = yearSel ? yearSel.value : '';
+  const month = monthSel ? monthSel.value : '';
+  const rows = getFridayCounts(year, month);
+  const tbody = document.getElementById('fridayTableBody');
+  const status = document.getElementById('fridayStatus');
+
+  if(!rows.length){
+    tbody.innerHTML = '<tr><td colspan="4"><div class="analytics-empty">No Friday attendance records found.</div></td></tr>';
+    status.textContent = 'No Friday attendance records yet.';
+    return;
+  }
+
+  // Table rows, most recent Friday first, with week-over-week trend vs the prior Friday
+  tbody.innerHTML = rows.map(([date, count], i) => {
+    const d = new Date(date + 'T00:00:00');
+    const label = d.toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
+    let trendHtml = '<span class="fr-trend-flat">—</span>';
+    if(i < rows.length - 1){
+      const prevCount = rows[i + 1][1];
+      const diff = count - prevCount;
+      if(diff > 0) trendHtml = `<span class="fr-trend-up">▲ ${diff}</span>`;
+      else if(diff < 0) trendHtml = `<span class="fr-trend-down">▼ ${Math.abs(diff)}</span>`;
+      else trendHtml = '<span class="fr-trend-flat">— 0</span>';
+    }
+    return `<tr><td class="fr-col-num">${i+1}</td><td>${label}</td><td class="fr-col-count">${count}</td><td class="fr-col-trend">${trendHtml}</td></tr>`;
+  }).join('');
+
+  status.textContent = `${rows.length} Friday${rows.length===1?'':'s'} recorded — live data from the church database.`;
 }
 
 function buildYearSelect(){
