@@ -837,20 +837,20 @@
           <select id="fridayMonthSelect"></select>
         </div>
       </div>
-      <p class="analytics-sub">Attendee counts for every Friday service, grouped by date.</p>
+      <p class="analytics-sub">Weekly attendance totals — Saturday through Friday (7 days), summed and shown on that Friday's row.</p>
 
       <div class="friday-table-wrap">
         <table class="friday-table">
           <thead>
             <tr>
               <th class="fr-col-num">#</th>
-              <th>Friday Date</th>
-              <th class="fr-col-count">Attendees</th>
+              <th>Week Ending (Friday)</th>
+              <th class="fr-col-count">Weekly Total</th>
               <th class="fr-col-trend">Trend</th>
             </tr>
           </thead>
           <tbody id="fridayTableBody">
-            <tr><td colspan="4"><div class="analytics-empty">Loading Friday attendance…</div></td></tr>
+            <tr><td colspan="4"><div class="analytics-empty">Loading weekly attendance…</div></td></tr>
           </tbody>
         </table>
       </div>
@@ -1171,18 +1171,45 @@ function isFridayDateStr(dateStr){
   return !isNaN(d.getTime()) && d.getDay() === 5;
 }
 
+function dateStrAddDays(dateStr, days){
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+/* For every Friday found in the (optionally year/month filtered) data,
+   sum ALL attendance records that fall in the 7-day window ending on
+   that Friday (i.e. Saturday through Friday) — not just records dated
+   that exact Friday — and report that weekly total on the Friday's row.
+   So if a member's attendance was logged on any day that week (Sat-Thu),
+   it's automatically folded into that week's Friday total. */
 function getFridayCounts(year, month){
-  const counts = {};
+  // Identify which Fridays to show, filtered by the selected year/month
+  const fridaySet = new Set();
   attendanceRecords.forEach(r => {
     const date = r.attendance_date;
-    if(!date) return;
+    if(!date || !isFridayDateStr(date)) return;
     if(year && date.slice(0,4) !== year) return;
     if(month && date.slice(5,7) !== month) return;
-    if(!isFridayDateStr(date)) return;
-    counts[date] = (counts[date] || 0) + 1;
+    fridaySet.add(date);
   });
+
+  const rows = Array.from(fridaySet).map(friday => {
+    const weekStart = dateStrAddDays(friday, -6); // Saturday through Friday = 7 days
+    let total = 0;
+    attendanceRecords.forEach(r => {
+      const date = r.attendance_date;
+      if(!date) return;
+      if(date >= weekStart && date <= friday) total++;
+    });
+    return [friday, total];
+  });
+
   // Sort by date descending (most recent Friday first)
-  return Object.entries(counts).sort((a,b) => (a[0] < b[0] ? 1 : -1));
+  return rows.sort((a,b) => (a[0] < b[0] ? 1 : -1));
 }
 
 function buildFridayFilters(){
@@ -1220,12 +1247,12 @@ function renderFridayReport(){
   const status = document.getElementById('fridayStatus');
 
   if(!rows.length){
-    tbody.innerHTML = '<tr><td colspan="4"><div class="analytics-empty">No Friday attendance records found.</div></td></tr>';
-    status.textContent = 'No Friday attendance records yet.';
+    tbody.innerHTML = '<tr><td colspan="4"><div class="analytics-empty">No weekly attendance records found.</div></td></tr>';
+    status.textContent = 'No weekly attendance records yet.';
     return;
   }
 
-  // Table rows, most recent Friday first, with week-over-week trend vs the prior Friday
+  // Table rows, most recent week first, with week-over-week trend vs the prior week's total
   tbody.innerHTML = rows.map(([date, count], i) => {
     const d = new Date(date + 'T00:00:00');
     const label = d.toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
@@ -1240,7 +1267,7 @@ function renderFridayReport(){
     return `<tr><td class="fr-col-num">${i+1}</td><td>${label}</td><td class="fr-col-count">${count}</td><td class="fr-col-trend">${trendHtml}</td></tr>`;
   }).join('');
 
-  status.textContent = `${rows.length} Friday${rows.length===1?'':'s'} recorded — live data from the church database.`;
+  status.textContent = `${rows.length} week${rows.length===1?'':'s'} of attendance recorded — live data from the church database.`;
 }
 
 function buildYearSelect(){
