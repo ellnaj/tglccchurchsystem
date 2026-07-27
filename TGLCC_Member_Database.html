@@ -812,6 +812,11 @@
       <button class="btn" id="loadFileBtn" onclick="triggerLoadFromDisk()">Load</button>
       <input type="file" id="backupInput" accept=".json" onchange="handleRestore(event)">
       <button class="btn btn-primary" id="addMemberBtn" onclick="openForm()">+ Add member</button>
+      <select class="filter" id="rosterSort" onchange="renderRoster()">
+        <option value="alpha">Sort: Alphabetical (A–Z)</option>
+        <option value="newest">Sort: Newest (started attending)</option>
+        <option value="oldest">Sort: Oldest (started attending)</option>
+      </select>
     </div>
     <div class="hint" style="margin-top:-6px;">Data is saved automatically to Supabase as you add, edit, or delete members — including photos. Click Backup any time to save a church-roster-data.json snapshot to your computer. Click Load only when you need to restore data from a backup file — it will replace all current data with the contents of that file.</div>
 
@@ -830,6 +835,7 @@
             <th>Name</th>
             <th>Age</th>
             <th>Birthday</th>
+            <th>Member Since</th>
             <th>Ministry</th>
             <th>Baptized</th>
             <th>Contact</th>
@@ -2653,7 +2659,20 @@ function renderRoster(){
     const matchesMinistry = matchesMinistryFilter(m, ministryFilter);
     return matchesQ && matchesMinistry;
   });
-  list.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const sortMode = $('rosterSort') ? $('rosterSort').value : 'alpha';
+  if(sortMode === 'newest' || sortMode === 'oldest'){
+    list.sort((a,b)=>{
+      const da = a.startedAttending ? new Date(a.startedAttending).getTime() : null;
+      const db = b.startedAttending ? new Date(b.startedAttending).getTime() : null;
+      // members with no start date always sort to the bottom
+      if(da === null && db === null) return (a.name||'').localeCompare(b.name||'');
+      if(da === null) return 1;
+      if(db === null) return -1;
+      return sortMode === 'newest' ? (db - da) : (da - db);
+    });
+  } else {
+    list.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  }
 
   const body = $('rosterBody');
   body.innerHTML = list.map(m=>`
@@ -2663,6 +2682,7 @@ function renderRoster(){
       <td class="name-cell">${escapeHtml(m.name)}</td>
       <td class="mono">${calcAge(m.birthday)}</td>
       <td class="mono muted">${m.birthday ? fmtDate(m.birthday) : '—'}</td>
+      <td class="mono muted">${m.startedAttending ? fmtDate(m.startedAttending) : '—'}</td>
       <td>${roleBadgesHtml(m, true)}</td>
       <td><span class="badge ${m.baptized ? 'badge-yes':'badge-no'}">${m.baptized ? 'Yes':'No'}</span></td>
       <td class="mono muted">${m.contact ? escapeHtml(m.contact) : '—'}</td>
