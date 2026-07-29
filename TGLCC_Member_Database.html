@@ -256,6 +256,31 @@
   .modal-actions{display:flex;justify-content:space-between;margin-top:22px;gap:10px;}
   .modal-actions .right{display:flex;gap:8px;}
 
+  /* ---- Staff Permissions panel (Admin only) ---- */
+  .perm-list{display:flex;flex-direction:column;gap:2px;margin-top:6px;}
+  .perm-row{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:14px 4px;border-bottom:1px solid var(--line);
+  }
+  .perm-row:last-child{border-bottom:none;}
+  .perm-row-text .perm-title{font-size:13.5px;font-weight:600;color:var(--ink);}
+  .perm-row-text .perm-desc{font-size:12px;color:var(--ink-soft);margin-top:2px;max-width:360px;}
+  .perm-switch{position:relative;display:inline-block;width:42px;height:24px;flex-shrink:0;cursor:pointer;}
+  .perm-switch input{opacity:0;width:0;height:0;}
+  .perm-switch .perm-slider{
+    position:absolute;inset:0;background:var(--line-strong);border-radius:999px;
+    transition:background .18s ease;
+  }
+  .perm-switch .perm-slider::before{
+    content:'';position:absolute;height:18px;width:18px;left:3px;top:3px;
+    background:#fff;border-radius:50%;transition:transform .18s ease;
+    box-shadow:0 1px 2px rgba(0,0,0,0.25);
+  }
+  .perm-switch input:checked + .perm-slider{background:var(--green);}
+  .perm-switch input:checked + .perm-slider::before{transform:translateX(18px);}
+  .perm-switch input:focus-visible + .perm-slider{outline:2px solid var(--green);outline-offset:2px;}
+  .perm-note{font-size:12px;color:var(--ink-soft);margin-top:14px;line-height:1.5;}
+
   /* ---- Church role picker (Add/Edit Member) ---- */
   .role-picker-field{
     border:1px solid var(--line-strong);border-radius:10px;background:var(--paper);padding:10px 12px 12px;
@@ -746,6 +771,7 @@
     <div class="masthead-right">
       <div class="sub" id="todayLabel"></div>
       <span class="role-badge" id="roleBadge"></span>
+      <button class="btn btn-sm" id="staffPermissionsBtn" onclick="openStaffPermissions()" style="display:none;">Staff permissions</button>
       <button class="btn btn-sm" id="changePasswordBtn" onclick="openChangePassword()">Change password</button>
       <button class="btn btn-danger btn-sm" id="logoutBtn" onclick="handleLogout()">Logout</button>
     </div>
@@ -783,6 +809,67 @@
         <div class="right">
           <button type="button" class="btn btn-ghost" onclick="closeChangePassword()">Cancel</button>
           <button type="button" class="btn btn-primary" onclick="saveNewPassword()">Save new password</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STAFF PERMISSIONS MODAL (Admin only) -->
+  <div class="modal-overlay" id="staffPermissionsOverlay">
+    <div class="modal">
+      <h2>Staff permissions</h2>
+      <div class="modal-sub">Choose which locked sections the Staff account is allowed to add or edit. Viewer stays read-only no matter what's toggled here.</div>
+
+      <div class="perm-list">
+        <div class="perm-row">
+          <div class="perm-row-text">
+            <div class="perm-title">Worker milestone</div>
+            <div class="perm-desc">"Started as worker" checkbox and worker start date, on the member form.</div>
+          </div>
+          <label class="perm-switch">
+            <input type="checkbox" id="perm-worker">
+            <span class="perm-slider"></span>
+          </label>
+        </div>
+        <div class="perm-row">
+          <div class="perm-row-text">
+            <div class="perm-title">Leader milestone</div>
+            <div class="perm-desc">"Started as leader" checkbox and leader start date, on the member form.</div>
+          </div>
+          <label class="perm-switch">
+            <input type="checkbox" id="perm-leader">
+            <span class="perm-slider"></span>
+          </label>
+        </div>
+        <div class="perm-row">
+          <div class="perm-row-text">
+            <div class="perm-title">Church roles</div>
+            <div class="perm-desc">The "Select Church Roles" picker on the member form.</div>
+          </div>
+          <label class="perm-switch">
+            <input type="checkbox" id="perm-churchRole">
+            <span class="perm-slider"></span>
+          </label>
+        </div>
+        <div class="perm-row">
+          <div class="perm-row-text">
+            <div class="perm-title">Trainings</div>
+            <div class="perm-desc">Add, edit and manage participants in the Trainings section.</div>
+          </div>
+          <label class="perm-switch">
+            <input type="checkbox" id="perm-training">
+            <span class="perm-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="perm-note">Name, Birthday, Started Attending and Membership Status stay locked for Staff on existing members regardless of these settings. Changes apply the next time the Staff account signs in or reloads the page.</div>
+
+      <div class="modal-actions">
+        <div></div>
+        <div class="right">
+          <button type="button" class="btn btn-ghost" onclick="closeStaffPermissions()">Cancel</button>
+          <button type="button" class="btn btn-primary" onclick="saveStaffPermissions()">Save permissions</button>
         </div>
       </div>
     </div>
@@ -1091,7 +1178,7 @@
       <input class="search" id="searchBoxTraining" type="text" placeholder="Search training name" oninput="renderTrainings()">
       <button class="btn btn-primary" id="addTrainingBtn" onclick="openTrainingForm()">+ Add training</button>
     </div>
-    <div class="hint" style="margin-top:-6px;">Log a training, then check off every active member who took part. Attended trainings also show up on each member's profile.</div>
+    <div class="hint" id="trainingHint" style="margin-top:-6px;">Log a training, then check off every active member who took part. Attended trainings also show up on each member's profile.</div>
 
     <div class="stat-strip">
       <div class="stat">Total trainings <b id="statTrainingTotal">0</b></div>
@@ -1244,6 +1331,25 @@
         </div>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- TRAINING PARTICIPANTS VIEWER (read-only — shown to Staff/Viewer accounts instead of the edit form) -->
+<div class="modal-overlay" id="trainingViewOverlay">
+  <div class="modal">
+    <h2 id="viewTrainingTitle">Training</h2>
+    <div class="modal-sub">Date: <span id="viewTrainingDate">—</span> &middot; view only</div>
+
+    <div class="form-section-title" style="margin-top:18px;">Participants</div>
+    <div class="participant-picker" id="viewParticipantList"></div>
+    <div class="participant-count" id="viewParticipantCount"></div>
+
+    <div class="modal-actions">
+      <div></div>
+      <div class="right">
+        <button type="button" class="btn btn-ghost" onclick="closeTrainingViewer()">Close</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -3366,7 +3472,9 @@ function renderTrainings(){
   if(body){
     body.innerHTML = list.map(t=>{
       const count = Array.isArray(t.participantIds) ? t.participantIds.length : 0;
-      const rowClick = canEditData() ? `onclick="openTrainingForm('${t.id}')"` : '';
+      const rowClick = canEditTraining()
+        ? `onclick="openTrainingForm('${t.id}')"`
+        : `onclick="openTrainingParticipants('${t.id}')"`;
       return `
       <tr ${rowClick}>
         <td class="name-cell">${escapeHtml(t.name)}</td>
@@ -3374,7 +3482,9 @@ function renderTrainings(){
         <td class="mono">${count} participant${count===1?'':'s'}</td>
         <td>
           <div class="row-actions">
-            ${canEditData() ? `<button class="btn btn-sm" onclick="event.stopPropagation(); openTrainingForm('${t.id}')">Edit</button>` : ''}
+            ${canEditTraining()
+              ? `<button class="btn btn-sm" onclick="event.stopPropagation(); openTrainingForm('${t.id}')">Edit</button>`
+              : `<button class="btn btn-sm" onclick="event.stopPropagation(); openTrainingParticipants('${t.id}')">View</button>`}
           </div>
         </td>
       </tr>
@@ -3389,7 +3499,7 @@ let editingTrainingId = null;
 let selectedParticipantIds = new Set();
 
 function openTrainingForm(id){
-  if(!canEditData()) return; // view-only accounts can't open the training form
+  if(!canEditTraining()) return; // only admin can add/edit trainings — Staff & Viewer use openTrainingParticipants() instead
   editingTrainingId = id || null;
   const t = id ? trainings.find(x=>x.id===id) : null;
   $('trainingModalTitle').textContent = id ? 'Edit training' : 'Add training';
@@ -3408,6 +3518,39 @@ function openTrainingForm(id){
 function closeTrainingForm(){
   $('trainingModalOverlay').classList.remove('open');
   editingTrainingId = null;
+}
+
+// Read-only participants view, used by Staff & Viewer accounts (who can't
+// open the edit form). Shows the training name/date and who attended, with
+// no checkboxes and no save/delete controls.
+function openTrainingParticipants(id){
+  const t = trainings.find(x=>x.id===id);
+  if(!t) return;
+  $('viewTrainingTitle').textContent = t.name || 'Training';
+  $('viewTrainingDate').textContent = t.date ? fmtDate(t.date) : '—';
+
+  const ids = Array.isArray(t.participantIds) ? t.participantIds : [];
+  const list = members
+    .filter(m => ids.includes(m.id))
+    .sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+
+  const box = $('viewParticipantList');
+  if(!list.length){
+    box.innerHTML = `<div class="muted" style="padding:14px;text-align:center;">No participants recorded.</div>`;
+  } else {
+    box.innerHTML = list.map(m => `
+      <div class="participant-row">
+        ${avatarHtml(m, 'avatar avatar-sm', 'avatar-fallback avatar-sm')}
+        <span class="p-name">${escapeHtml(m.name)}${m.active===false ? ' <span class="muted" style="font-weight:400;">(Inactive)</span>' : ''}</span>
+      </div>
+    `).join('');
+  }
+  $('viewParticipantCount').textContent = `${list.length} participant${list.length===1?'':'s'}`;
+  $('trainingViewOverlay').classList.add('open');
+}
+
+function closeTrainingViewer(){
+  $('trainingViewOverlay').classList.remove('open');
 }
 
 // Renders the checkbox list of active members inside the training form,
@@ -3449,7 +3592,7 @@ function toggleParticipant(id, checked){
 }
 
 async function saveTraining(){
-  if(!canEditData()) return;
+  if(!canEditTraining()) return;
   const name = $('t-name').value.trim();
   if(!name){ toast('Training name is required'); $('t-name').focus(); return; }
   const date = $('t-date').value;
@@ -3510,7 +3653,7 @@ function openForm(id){
   setFormChurchRoles(memberRoles(m));
   ensureWorkerOrLeaderForRoles();
   updateChurchRoleAvailability();
-  applyMemberFormFieldLock(!!id);
+  applyMemberFormFieldLock(!!id, m);
   $('modalOverlay').classList.add('open');
 }
 
@@ -3518,20 +3661,44 @@ function openForm(id){
 //  - Add Member (new record): everything is editable EXCEPT Membership
 //    Status (the Active checkbox) — new members are always added as Active.
 //  - Edit Member (existing record): Name, Birthday, Age, Started Attending
-//    and Membership Status are locked read-only; every other field
-//    (contact, address, invited by, baptized, worker, leader, notes,
-//    photo, church roles) stays fully editable.
+//    and Membership Status are always locked read-only for staff; every
+//    other field (contact, address, invited by, baptized, photo) stays
+//    fully editable.
+//  - Worker start date / "Started as worker" checkbox, Leader start date /
+//    "Started as leader" checkbox, and the Church Roles picker are locked
+//    for staff by default, UNLESS an admin has switched them on for Staff
+//    via the "Staff permissions" panel (see staffPermissions above).
+//  - Notes: for staff, additionally locked read-only whenever the member
+//    being edited is Inactive (on top of the always-locked fields above).
 // Admin always has full access; Viewer never reaches this form at all
 // (see the guard at the top of openForm).
-function applyMemberFormFieldLock(isEditing){
+function applyMemberFormFieldLock(isEditing, m){
   const staff = isStaffRole();
   let lockFieldIds = [];
   let lockCheckIds = [];
+  let lockChurchRoles = false;
 
   if(staff){
     if(isEditing){
       lockFieldIds = ['f-name', 'f-birthday', 'f-started'];
       lockCheckIds = ['f-active-check'];
+
+      if(!staffPermissions.worker){
+        lockFieldIds.push('f-worker-date');
+        lockCheckIds.push('f-worker-check');
+      }
+      if(!staffPermissions.leader){
+        lockFieldIds.push('f-leader-date');
+        lockCheckIds.push('f-leader-check');
+      }
+      lockChurchRoles = !staffPermissions.churchRole;
+
+      // Inactive members: staff also can't edit Notes on top of the
+      // fields already locked above.
+      const isInactive = !!m && m.active === false;
+      if(isInactive){
+        lockFieldIds.push('f-notes');
+      }
     }else{
       lockCheckIds = ['f-active-check'];
     }
@@ -3557,14 +3724,29 @@ function applyMemberFormFieldLock(isEditing){
     if(wrap) wrap.classList.toggle('field-locked', locked);
   });
 
-  // Photo and Church Roles are never locked under these rules — leave
-  // them fully available whenever the form itself is reachable.
+  // Photo is never locked under these rules — leave it fully available
+  // whenever the form itself is reachable.
   const photoChooseBtn = document.querySelector('.photo-picker .btn-sm');
   if(photoChooseBtn) photoChooseBtn.style.display = '';
   $('f-photo-input').disabled = false;
+
+  // Church Roles: for staff, the picker button is always locked while
+  // editing an existing member; otherwise leave it exactly as
+  // updateChurchRoleAvailability() already set it (enabled only when
+  // Worker or Leader is checked).
   $('selectRolesBtn').style.display = '';
+  const roleField = $('churchRoleField');
   const roleHint = $('churchRoleHint');
-  if(roleHint) roleHint.style.display = '';
+  if(lockChurchRoles){
+    $('selectRolesBtn').disabled = true;
+    if(roleField) roleField.classList.add('role-picker-field-disabled');
+    if(roleHint){
+      roleHint.style.display = '';
+      roleHint.textContent = 'Church Roles can\'t be changed on this account.';
+    }
+  }else if(roleHint){
+    roleHint.style.display = '';
+  }
 }
 
 function setPhotoPreview(dataUrl){
@@ -4284,15 +4466,18 @@ const ADMIN_RESET_EMAIL = 'Tglccbulletin@gmail.com';
    ROLE-BASED SIGN-IN (3 accounts, 1 password each)
    ----------------------------------------------------------------------
    - admin : full access to everything (add, edit, delete, deactivate/
-             reactivate, import, change any password, manage users)
-   - user1 : "Staff" account. Can add new members/trainings and edit only
-             Name, Birthday, Started Attending and Membership Status
-             (the Active/Inactive checkbox) on the member form; every other
+             reactivate, import, change any password, manage users). Only
+             admin can add/edit/delete Trainings.
+   - user1 : "Staff" account. Can add new members and edit only Name,
+             Birthday, Started Attending and Membership Status (the
+             Active/Inactive checkbox) on the member form; every other
              field is locked read-only. Cannot delete, cannot use the quick
              Deactivate/Reactivate buttons, cannot change any password.
+             Trainings are view-only: tapping a training shows its
+             participant list instead of the edit form.
    - user2 : "Viewer" account. Read-only — can browse and export data but
              cannot add, edit, delete, deactivate/reactivate, or change
-             any password.
+             any password. Trainings are view-only, same as Staff.
    Passwords are stored in a Supabase table called "app_users" (role text
    primary key, password text) so all three roles work the same way from
    any device. If that table doesn't exist yet (or the device is offline)
@@ -4343,6 +4528,76 @@ async function loadRoleCredentialsFromSupabase(){
 }
 loadRoleCredentialsFromSupabase();
 
+/* =========================================================================
+   STAFF PERMISSIONS (admin-configurable)
+   ----------------------------------------------------------------------
+   By default the Staff (user1) account has the fixed restrictions
+   described above. An admin can flip any of these switches on to unlock
+   that one section for Staff specifically — Viewer is never affected.
+   Stored in a Supabase table called "app_settings" (id text primary key,
+   value jsonb) under id "staff_permissions", the same fallback pattern as
+   the role passwords above: Supabase -> localStorage cache -> built-in
+   defaults (everything off), so the app always works even before that
+   table exists. SQL to create it:
+     create table app_settings (id text primary key, value jsonb);
+   ========================================================================= */
+const STAFF_PERMISSION_DEFAULTS = { worker:false, leader:false, churchRole:false, training:false };
+const STAFF_PERMISSIONS_KEY = 'tglcc_staff_permissions';
+let staffPermissions = { ...STAFF_PERMISSION_DEFAULTS };
+
+function loadCachedStaffPermissions(){
+  try{
+    const raw = localStorage.getItem(STAFF_PERMISSIONS_KEY);
+    if(raw) staffPermissions = { ...STAFF_PERMISSION_DEFAULTS, ...JSON.parse(raw) };
+  }catch(e){ /* storage disabled or corrupt cache — keep defaults */ }
+}
+loadCachedStaffPermissions();
+
+async function loadStaffPermissionsFromSupabase(){
+  try{
+    const { data, error } = await supabaseClient.from('app_settings').select('value').eq('id', 'staff_permissions').maybeSingle();
+    if(error || !data || !data.value) return;
+    staffPermissions = { ...STAFF_PERMISSION_DEFAULTS, ...data.value };
+    try{ localStorage.setItem(STAFF_PERMISSIONS_KEY, JSON.stringify(staffPermissions)); }catch(e){}
+    if(typeof applyRolePermissions === 'function') applyRolePermissions();
+  }catch(e){ /* table missing or offline — keep using cached/default permissions */ }
+}
+loadStaffPermissionsFromSupabase();
+
+async function persistStaffPermissions(){
+  try{ localStorage.setItem(STAFF_PERMISSIONS_KEY, JSON.stringify(staffPermissions)); }catch(e){}
+  try{
+    await supabaseClient.from('app_settings').upsert({ id: 'staff_permissions', value: staffPermissions }, { onConflict: 'id' });
+  }catch(e){ /* saved locally at least; will sync next time Supabase is reachable */ }
+}
+
+function openStaffPermissions(){
+  if(!isAdminRole()) return;
+  $('perm-worker').checked = !!staffPermissions.worker;
+  $('perm-leader').checked = !!staffPermissions.leader;
+  $('perm-churchRole').checked = !!staffPermissions.churchRole;
+  $('perm-training').checked = !!staffPermissions.training;
+  $('staffPermissionsOverlay').classList.add('open');
+}
+
+function closeStaffPermissions(){
+  $('staffPermissionsOverlay').classList.remove('open');
+}
+
+async function saveStaffPermissions(){
+  if(!isAdminRole()) return;
+  staffPermissions = {
+    worker: $('perm-worker').checked,
+    leader: $('perm-leader').checked,
+    churchRole: $('perm-churchRole').checked,
+    training: $('perm-training').checked,
+  };
+  await persistStaffPermissions();
+  closeStaffPermissions();
+  applyRolePermissions();
+  toast('Staff permissions updated');
+}
+
 // Saves a new password for the given role: updates memory, the local
 // cache, and (if reachable) the shared Supabase table.
 async function setRolePassword(role, newPassword){
@@ -4369,6 +4624,7 @@ function canDeleteData(){ return currentRole === 'admin'; }                     
 function canToggleActive(){ return currentRole === 'admin'; }                          // quick Deactivate/Reactivate buttons
 function canChangePasswords(){ return currentRole === 'admin'; }
 function canImportData(){ return currentRole === 'admin' || currentRole === 'user1'; }
+function canEditTraining(){ return currentRole === 'admin' || (currentRole === 'user1' && !!staffPermissions.training); }   // add/edit/delete trainings — admin always; Staff only if granted via Staff Permissions
 
 // Applies the current role's permissions across the whole UI: shows/hides
 // buttons that aren't allowed, and (re)runs whenever we log in or re-render.
@@ -4387,13 +4643,21 @@ function applyRolePermissions(){
   const setDisplay = (id, show) => { const el = $(id); if(el) el.style.display = show ? '' : 'none'; };
 
   setDisplay('addMemberBtn', editable);
-  setDisplay('addTrainingBtn', editable);
+  setDisplay('addTrainingBtn', canEditTraining());
   setDisplay('importExcelBtn', canImportData());
   setDisplay('saveFileBtn', !viewer);       // Viewer loses the Save (to file) button
-  setDisplay('loadFileBtn', admin || staff); // Admin loads freely; Staff sees the button but must enter the Admin password each time
+  setDisplay('loadFileBtn', admin); // Admin loads freely; Staff no longer sees the Load button at all
   setDisplay('changePasswordBtn', canChangePasswords());
+  setDisplay('staffPermissionsBtn', isAdminRole());
 
   document.body.classList.toggle('role-view-only', viewer);
+
+  const trainingHint = $('trainingHint');
+  if(trainingHint){
+    trainingHint.textContent = canEditTraining()
+      ? "Log a training, then check off every active member who took part. Attended trainings also show up on each member's profile."
+      : "Tap a training to view its list of participants. Only an admin account can add or edit trainings.";
+  }
 
   // Re-render any lists currently on screen so their row-action buttons
   // (Edit / Deactivate / Reactivate / Delete) reflect the new permissions.
