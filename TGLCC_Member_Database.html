@@ -39,7 +39,9 @@
     font-family:var(--font-body);
     -webkit-font-smoothing:antialiased;
   }
-  .app{max-width:1080px;margin:0 auto;padding:28px 24px 80px;}
+  html{-webkit-text-size-adjust:100%;}
+  body{overflow-x:hidden;}
+  .app{max-width:1080px;margin:0 auto;padding:28px 24px 80px;width:100%;}
 
   /* header */
   .masthead{
@@ -58,20 +60,26 @@
     font-family:var(--font-display);font-weight:600;font-size:26px;margin:0;letter-spacing:-0.01em;line-height:1.15;
   }
   .masthead .sub{font-size:12px;color:var(--ink-soft);font-family:var(--font-mono);letter-spacing:0.02em;}
-  .masthead-right{display:flex;align-items:center;gap:14px;}
+  .masthead-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:flex-end;}
 
   /* tab strip - ledger divider style */
-  .tabs{display:flex;gap:2px;margin-bottom:20px;}
+  .tabs{
+    display:flex;gap:2px;margin-bottom:20px;
+    overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;
+  }
+  .tabs::-webkit-scrollbar{height:4px;}
+  .tabs::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:4px;}
   .tab-btn{
     font-family:var(--font-body);font-size:14px;font-weight:600;color:var(--ink-soft);
     background:transparent;border:none;border-bottom:3px solid transparent;
-    padding:9px 4px;margin-right:22px;cursor:pointer;
+    padding:9px 4px;margin-right:22px;cursor:pointer;flex-shrink:0;white-space:nowrap;
   }
   .tab-btn.active{color:var(--green-dark);border-bottom-color:var(--green);}
   .tab-btn .count{
     font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);margin-left:6px;
   }
-  .subtabs{display:flex;gap:6px;margin-bottom:16px;}
+  .subtabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
   .subtab-btn{
     font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--ink-soft);
     background:var(--surface);border:1px solid var(--line-strong);border-radius:20px;
@@ -94,6 +102,7 @@
   .btn{
     padding:9px 14px;border-radius:var(--radius);border:1px solid var(--line-strong);
     background:var(--surface);color:var(--ink);font-size:14px;font-weight:600;white-space:nowrap;
+    touch-action:manipulation;
   }
   .btn:hover{background:var(--paper);}
   .btn-primary{background:var(--green);color:#fff;border-color:var(--green);}
@@ -105,7 +114,10 @@
   .btn-sm{padding:5px 10px;font-size:12.5px;border-radius:7px;}
 
   /* roster table */
-  .roster-wrap{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--surface);}
+  .roster-wrap{
+    border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);
+    overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
+  }
   table{width:100%;border-collapse:collapse;font-size:13.5px;}
   thead th{
     text-align:left;font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:0.04em;
@@ -123,7 +135,7 @@
   .badge-yes{background:var(--green-tint);color:var(--green-dark);}
   .badge-no{background:var(--line);color:var(--ink-soft);}
   .badge-gold{background:var(--gold-tint);color:var(--gold);}
-  .row-actions{display:flex;gap:6px;}
+  .row-actions{display:flex;gap:6px;flex-wrap:nowrap;}
   .empty-state{padding:60px 20px;text-align:center;color:var(--ink-soft);}
   .avatar{
     width:34px;height:34px;border-radius:50%;object-fit:cover;display:block;
@@ -228,11 +240,13 @@
   .modal-overlay{
     position:fixed;inset:0;background:rgba(41,38,32,0.45);display:none;
     align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;z-index:50;
+    -webkit-overflow-scrolling:touch;
   }
   .modal-overlay.open{display:flex;}
   .modal{
     background:var(--surface);border-radius:14px;max-width:640px;width:100%;padding:26px 28px 22px;
     box-shadow:0 12px 40px rgba(0,0,0,0.18);
+    box-sizing:border-box;
   }
   .modal h2{font-family:var(--font-display);font-weight:600;font-size:21px;margin:0 0 4px;}
   .modal .modal-sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:18px;}
@@ -253,8 +267,8 @@
   .check-row{display:flex;align-items:center;gap:8px;margin-top:2px;}
   .check-row input{width:16px;height:16px;}
   .check-row label{font-size:13px;color:var(--ink);font-weight:500;}
-  .modal-actions{display:flex;justify-content:space-between;margin-top:22px;gap:10px;}
-  .modal-actions .right{display:flex;gap:8px;}
+  .modal-actions{display:flex;justify-content:space-between;margin-top:22px;gap:10px;flex-wrap:wrap;}
+  .modal-actions .right{display:flex;gap:8px;flex-wrap:wrap;}
 
   /* ---- Staff Permissions panel (Admin only) ---- */
   .perm-list{display:flex;flex-direction:column;gap:2px;margin-top:6px;}
@@ -712,6 +726,139 @@
   .org-member-row .om-name{font-size:13px;}
   .org-unassigned{margin-top:30px;padding-top:18px;border-top:1px dashed var(--line-strong);}
   .org-unassigned .org-tier-label{color:var(--ink-faint);}
+
+  /* ================================================================
+     RESPONSIVE / MOBILE & TABLET LAYER
+     Applies progressively tighter spacing, touch-friendly targets,
+     and reflowed layouts as the viewport narrows.
+     ================================================================ */
+
+  /* ---- Tablet (<=900px) ---- */
+  @media (max-width:900px){
+    .app{padding:20px 18px 64px;}
+    .masthead h1{font-size:23px;}
+    .celebrants-grid{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));}
+    .month-grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));}
+    .bday-grid{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));}
+  }
+
+  /* ---- Tablet / small laptop (<=768px) ---- */
+  @media (max-width:768px){
+    .app{padding:16px 14px 56px;}
+
+    /* masthead */
+    .masthead{padding-bottom:12px;margin-bottom:14px;}
+    .masthead-logo{width:44px;height:44px;}
+    .masthead h1{font-size:20px;}
+    .masthead .sub{display:none;}
+    .masthead-right{gap:8px;}
+
+    /* tabs */
+    .tabs{margin-bottom:16px;padding-bottom:2px;}
+    .tab-btn{font-size:13.5px;padding:10px 4px;margin-right:16px;}
+    .subtab-btn{padding:8px 14px;font-size:13px;}
+
+    /* toolbar: search full width first, then buttons/selects flow evenly */
+    .toolbar{gap:8px;}
+    .toolbar .search{flex:1 1 100%;order:-1;min-width:0;}
+    .toolbar .filter,
+    .toolbar select.filter{flex:1 1 auto;min-width:120px;}
+    .toolbar .btn{flex:1 1 auto;min-width:0;}
+
+    /* touch-friendly form controls; 16px stops iOS auto-zoom */
+    .search, select.filter, .field input, .field select, .field textarea,
+    .role-search-input, .role-other-input,
+    .login-card input[type=password], .pw-field input[type=password], .pw-field select{
+      font-size:16px !important;
+    }
+    .btn{min-height:40px;padding:9px 14px;}
+    .btn-sm{min-height:34px;padding:7px 11px;font-size:13px;}
+    .tab-btn, .subtab-btn{min-height:38px;}
+
+    /* tables: force horizontal scroll rather than crushed columns */
+    .roster-wrap table{min-width:680px;}
+    .baptism-list-row, .wl-list-row{font-size:12.5px;}
+
+    /* grids collapse a step earlier */
+    .celebrants-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;}
+    .bday-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));}
+    .month-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));}
+    .org-groups, .org-row{gap:10px;}
+    .org-group{min-width:150px;max-width:100%;flex:1 1 220px;}
+    .org-card{min-width:140px;flex:1 1 140px;}
+
+    /* modal */
+    .modal-overlay{padding:20px 10px;}
+    .modal{padding:20px 18px 18px;border-radius:12px;}
+    .modal.detail-modal-shell{padding:0;border-radius:14px;}
+    .modal h2{font-size:19px;}
+    .role-modal-shell{max-width:100%;}
+
+    /* stat strips / summary cards */
+    .stat-strip{gap:12px;}
+    .att-cards, .baptism-summary, .wl-summary{gap:10px;}
+    .att-card, .baptism-card, .wl-card{min-width:130px;padding:12px 14px;}
+
+    /* login */
+    .login-card{padding:28px 22px 24px;}
+  }
+
+  /* ---- Phone (<=560px) ---- */
+  @media (max-width:560px){
+    .app{padding:14px 12px 52px;}
+
+    .masthead{align-items:flex-start;}
+    .masthead-left{gap:10px;}
+    .masthead-logo{width:38px;height:38px;}
+    .masthead h1{font-size:17px;}
+    .masthead-titles .church-name{font-size:10px;}
+    .masthead-right{width:100%;justify-content:flex-start;}
+    .masthead-right .btn-sm{flex:1 1 auto;text-align:center;}
+
+    /* toolbar buttons stack two-up for easy tapping */
+    .toolbar .btn, .toolbar select.filter{flex:1 1 calc(50% - 4px);}
+
+    .modal-actions{flex-direction:column-reverse;align-items:stretch;margin-top:18px;}
+    .modal-actions .right{flex-direction:column;width:100%;}
+    .modal-actions .right .btn{width:100%;}
+    .modal-actions > div:first-child:empty{display:none;}
+
+    .detail-banner{flex-wrap:wrap;}
+    .detail-banner-info{min-width:0;}
+    .detail-banner .d-name{font-size:18px;}
+
+    .role-picker-field-compact{flex-direction:column;align-items:stretch;}
+
+    .celebrants-grid{grid-template-columns:1fr 1fr;gap:10px;}
+    .celeb-photo,.celeb-photo-fallback{width:68px;height:68px;}
+    .bday-grid{grid-template-columns:1fr;}
+    .month-grid{grid-template-columns:1fr;}
+    .org-row, .org-groups{flex-direction:column;align-items:stretch;}
+    .org-card{min-width:0;}
+    .org-group{min-width:0;max-width:100%;}
+
+    .stat-strip{flex-direction:column;gap:6px;}
+    .att-cards, .baptism-summary, .wl-summary{flex-direction:column;}
+    .att-card, .baptism-card, .wl-card{min-width:0;}
+
+    .login-overlay{padding:14px;}
+    .login-card{padding:26px 18px 22px;max-width:100%;}
+
+    .perm-row{flex-wrap:wrap;gap:10px;}
+  }
+
+  /* ---- Small phone (<=380px) ---- */
+  @media (max-width:380px){
+    .masthead h1{font-size:15.5px;}
+    .toolbar .btn, .toolbar select.filter{flex:1 1 100%;}
+    .celebrants-grid{grid-template-columns:1fr;}
+  }
+
+  /* touch devices: remove hover-only affordances that can stick after tap */
+  @media (hover:none){
+    tbody tr:hover{background:transparent;}
+    .celeb-card:hover{transform:none;box-shadow:0 6px 18px rgba(38,47,112,0.08);}
+  }
 </style>
 </head>
 <body>
