@@ -45,7 +45,7 @@
 
   /* header */
   .masthead{
-    display:flex;align-items:center;justify-content:space-between;
+    display:flex;align-items:center;
     border-bottom:2px solid var(--ink);
     padding-bottom:14px;margin-bottom:18px;
     flex-wrap:wrap;gap:12px;
@@ -60,7 +60,7 @@
     font-family:var(--font-display);font-weight:600;font-size:26px;margin:0;letter-spacing:-0.01em;line-height:1.15;
   }
   .masthead .sub{font-size:12px;color:var(--ink-soft);font-family:var(--font-mono);letter-spacing:0.02em;}
-  .masthead-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:flex-end;}
+  .masthead-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:flex-end;margin-left:auto;}
 
   /* tab strip - ledger divider style */
   .tabs{
@@ -812,8 +812,8 @@
     .masthead-logo{width:38px;height:38px;}
     .masthead h1{font-size:17px;}
     .masthead-titles .church-name{font-size:10px;}
-    .masthead-right{width:100%;justify-content:flex-start;}
-    .masthead-right .btn-sm{flex:1 1 auto;text-align:center;}
+    .masthead-right{width:100%;justify-content:flex-end;}
+    .masthead-right .btn-sm{flex:0 0 auto;text-align:center;}
 
     /* toolbar buttons stack two-up for easy tapping */
     .toolbar .btn, .toolbar select.filter{flex:1 1 calc(50% - 4px);}
@@ -919,6 +919,7 @@
       <div class="sub" id="todayLabel"></div>
       <span class="role-badge" id="roleBadge"></span>
       <button class="btn btn-sm" id="staffPermissionsBtn" onclick="openStaffPermissions()" style="display:none;">Staff permissions</button>
+      <button class="btn btn-sm" id="loginActivityBtn" onclick="openLoginActivity()" style="display:none;">Login activity</button>
       <button class="btn btn-sm" id="changePasswordBtn" onclick="openChangePassword()">Change password</button>
       <button class="btn btn-danger btn-sm" id="logoutBtn" onclick="handleLogout()">Logout</button>
     </div>
@@ -1017,6 +1018,45 @@
         <div class="right">
           <button type="button" class="btn btn-ghost" onclick="closeStaffPermissions()">Cancel</button>
           <button type="button" class="btn btn-primary" onclick="saveStaffPermissions()">Save permissions</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOGIN ACTIVITY MODAL (Admin only) -->
+  <div class="modal-overlay" id="loginActivityOverlay">
+    <div class="modal" style="max-width:900px;">
+      <h2>Login activity</h2>
+      <div class="modal-sub">Every successful sign-in, most recent first. Stored in the Supabase "login_logs" table.</div>
+
+      <div style="max-height:56vh;overflow:auto;border:1px solid var(--line);border-radius:8px;margin-top:10px;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr style="background:var(--paper);position:sticky;top:0;">
+              <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);">User</th>
+              <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);">Date &amp; time</th>
+              <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);">Browser</th>
+              <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);">OS</th>
+              <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);">Device</th>
+              <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);">IP address</th>
+              <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);">Location</th>
+              <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);">Session ID</th>
+              <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);"></th>
+            </tr>
+          </thead>
+          <tbody id="loginActivityBody">
+            <tr><td colspan="9" style="padding:12px;color:var(--ink-soft);">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="modal-actions">
+        <div>
+          <button type="button" class="btn btn-danger btn-sm" onclick="clearAllLoginActivity()">Clear all</button>
+        </div>
+        <div class="right">
+          <button type="button" class="btn" onclick="loadLoginActivity()">Refresh</button>
+          <button type="button" class="btn btn-ghost" onclick="closeLoginActivity()">Close</button>
         </div>
       </div>
     </div>
@@ -4796,6 +4836,7 @@ function applyRolePermissions(){
   setDisplay('loadFileBtn', admin); // Admin loads freely; Staff no longer sees the Load button at all
   setDisplay('changePasswordBtn', canChangePasswords());
   setDisplay('staffPermissionsBtn', isAdminRole());
+  setDisplay('loginActivityBtn', isAdminRole());
 
   document.body.classList.toggle('role-view-only', viewer);
 
@@ -4824,6 +4865,7 @@ function attemptLogin(){
     applyRolePermissions();
     autoLoadOnLogin();
     resetSessionTimer();
+    logLoginActivity(role); // fire-and-forget: never blocks login on a slow/failed network
   }else{
     $('loginError').textContent = 'Incorrect password. Please try again.';
     $('loginPassword').value = '';
@@ -4835,6 +4877,209 @@ $('loginPassword').addEventListener('keydown', (e)=>{
   if(e.key === 'Enter') attemptLogin();
 });
 $('loginPassword').focus();
+
+/* =========================================================================
+   LOGIN ACTIVITY MONITORING
+   ----------------------------------------------------------------------
+   Every successful sign-in writes one row to a Supabase table called
+   "login_logs": username/role, date & time, browser, OS, device type,
+   public IP address, country, city, and a session ID. Logging is
+   fire-and-forget (never awaited from attemptLogin) and wrapped in
+   try/catch throughout, so a slow network, an ad-blocker, or a missing
+   table can never prevent someone from signing in — it only means that
+   one login won't have a log entry.
+
+   SQL needed to create the table in Supabase (Table Editor > SQL Editor):
+
+     create table login_logs (
+       id bigint generated always as identity primary key,
+       username text,
+       role text,
+       login_time timestamptz not null default now(),
+       browser text,
+       os text,
+       device_type text,
+       ip_address text,
+       country text,
+       city text,
+       session_id text
+     );
+
+     -- Optional but recommended if Row Level Security is enabled on your
+     -- project: allow the anon key used by this app to insert and read
+     -- rows (tighten this to your own auth model if you have one).
+     alter table login_logs enable row level security;
+     create policy "anon insert login_logs" on login_logs
+       for insert to anon with check (true);
+     create policy "anon read login_logs" on login_logs
+       for select to anon using (true);
+   ========================================================================= */
+let currentLoginSessionId = null;
+
+// Lightweight User-Agent parsing — no external library needed. Covers the
+// browsers/OSes/device types this church database is realistically opened
+// from (desktop + mobile Chrome/Safari/Firefox/Edge, iOS/Android/Windows/Mac).
+function detectClientInfo(){
+  const ua = navigator.userAgent || '';
+
+  let browser = 'Unknown';
+  if(/Edg\//.test(ua)) browser = 'Edge';
+  else if(/OPR\//.test(ua) || /Opera/.test(ua)) browser = 'Opera';
+  else if(/Chrome\//.test(ua) && !/Chromium/.test(ua)) browser = 'Chrome';
+  else if(/CriOS\//.test(ua)) browser = 'Chrome (iOS)';
+  else if(/FxiOS\//.test(ua)) browser = 'Firefox (iOS)';
+  else if(/Firefox\//.test(ua)) browser = 'Firefox';
+  else if(/Safari\//.test(ua) && /Version\//.test(ua)) browser = 'Safari';
+  else if(/MSIE|Trident\//.test(ua)) browser = 'Internet Explorer';
+
+  let os = 'Unknown';
+  if(/Windows NT 10\.0/.test(ua)) os = 'Windows 10/11';
+  else if(/Windows NT/.test(ua)) os = 'Windows';
+  else if(/iPhone|iPad|iPod/.test(ua)) os = 'iOS';
+  else if(/Mac OS X/.test(ua)) os = 'macOS';
+  else if(/Android/.test(ua)) os = 'Android';
+  else if(/CrOS/.test(ua)) os = 'ChromeOS';
+  else if(/Linux/.test(ua)) os = 'Linux';
+
+  let device = 'Desktop';
+  if(/iPad/.test(ua) || (/Android/.test(ua) && !/Mobile/.test(ua))) device = 'Tablet';
+  else if(/iPhone|iPod|Android.*Mobile|Mobi/.test(ua)) device = 'Mobile';
+
+  return { browser, os, device };
+}
+
+function generateSessionId(){
+  return 'sess_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+}
+
+// Looks up the visitor's public IP, country and city via a free, keyless,
+// CORS-enabled IP geolocation API. Fails silently (returns "Unknown"
+// fields) if offline, blocked by a privacy extension, or rate-limited —
+// the login itself is never affected.
+async function lookupPublicIpAndLocation(){
+  try{
+    const res = await fetch('https://ipapi.co/json/');
+    if(!res.ok) throw new Error('geo lookup returned ' + res.status);
+    const data = await res.json();
+    return {
+      ip: data.ip || 'Unknown',
+      country: data.country_name || 'Unknown',
+      city: data.city || 'Unknown'
+    };
+  }catch(e){
+    return { ip: 'Unknown', country: 'Unknown', city: 'Unknown' };
+  }
+}
+
+// Called right after every successful login. Builds and inserts one
+// login_logs row into Supabase. Intentionally NOT awaited by attemptLogin()
+// so a slow/failed network can never delay or block sign-in.
+async function logLoginActivity(role){
+  try{
+    const { browser, os, device } = detectClientInfo();
+    const geo = await lookupPublicIpAndLocation();
+    currentLoginSessionId = generateSessionId();
+
+    const row = {
+      username: ROLE_LABELS[role] || role,
+      role: role,
+      login_time: new Date().toISOString(),
+      browser: browser,
+      os: os,
+      device_type: device,
+      ip_address: geo.ip,
+      country: geo.country,
+      city: geo.city,
+      session_id: currentLoginSessionId
+    };
+
+    const { error } = await supabaseClient.from('login_logs').insert(row);
+    if(error) console.error('Login activity log failed to save:', error);
+  }catch(e){
+    // Logging must never break or block the login flow.
+    console.error('Login activity logging error:', e);
+  }
+}
+
+// ---- Admin-only "Login activity" viewer modal ----
+async function openLoginActivity(){
+  if(!isAdminRole()) return;
+  $('loginActivityOverlay').classList.add('open');
+  await loadLoginActivity();
+}
+function closeLoginActivity(){
+  $('loginActivityOverlay').classList.remove('open');
+}
+async function loadLoginActivity(){
+  const tbody = $('loginActivityBody');
+  if(!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="9" style="padding:12px;color:var(--ink-soft);">Loading…</td></tr>';
+  try{
+    const { data, error } = await supabaseClient
+      .from('login_logs')
+      .select('*')
+      .order('login_time', { ascending: false })
+      .limit(200);
+    if(error) throw error;
+    if(!data || !data.length){
+      tbody.innerHTML = '<tr><td colspan="9" style="padding:12px;color:var(--ink-soft);">No login activity recorded yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(row=>{
+      const when = row.login_time ? new Date(row.login_time).toLocaleString() : '';
+      const location = [row.city, row.country].filter(v=>v && v!=='Unknown').join(', ') || 'Unknown';
+      return `<tr>
+        <td style="padding:7px 10px;border-bottom:1px solid var(--line);">${escapeHtml(row.username || row.role || '')}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap;">${escapeHtml(when)}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid var(--line);">${escapeHtml(row.browser || '')}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid var(--line);">${escapeHtml(row.os || '')}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid var(--line);">${escapeHtml(row.device_type || '')}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid var(--line);font-family:var(--font-mono);">${escapeHtml(row.ip_address || '')}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid var(--line);">${escapeHtml(location)}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid var(--line);font-family:var(--font-mono);font-size:11px;color:var(--ink-soft);">${escapeHtml(row.session_id || '')}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap;">
+          <button type="button" class="btn btn-danger btn-sm" onclick="deleteLoginActivityRow(${JSON.stringify(row.id)})">Delete</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }catch(e){
+    console.error('Failed to load login activity:', e);
+    tbody.innerHTML = '<tr><td colspan="9" style="padding:12px;color:var(--red);">Could not load login activity — make sure the "login_logs" table exists in Supabase (see setup notes).</td></tr>';
+  }
+}
+
+// Deletes a single login_logs row (admin only), then refreshes the list.
+async function deleteLoginActivityRow(id){
+  if(!isAdminRole()) return;
+  if(!confirm('Delete this login activity entry? This cannot be undone.')) return;
+  try{
+    const { error } = await supabaseClient.from('login_logs').delete().eq('id', id);
+    if(error) throw error;
+    toast('Login activity entry deleted');
+    await loadLoginActivity();
+  }catch(e){
+    console.error('Failed to delete login activity entry:', e);
+    toast('⚠ Could not delete that entry — check your connection');
+  }
+}
+
+// Deletes every login_logs row (admin only), after a double confirmation
+// since this permanently wipes the whole audit trail.
+async function clearAllLoginActivity(){
+  if(!isAdminRole()) return;
+  if(!confirm('Clear ALL login activity? This permanently deletes the entire login history and cannot be undone.')) return;
+  if(!confirm('Are you absolutely sure? This will erase every recorded login for every account.')) return;
+  try{
+    // "id" is always > 0 for real rows, so this matches (and deletes) every row.
+    const { error } = await supabaseClient.from('login_logs').delete().gt('id', 0);
+    if(error) throw error;
+    toast('All login activity cleared');
+    await loadLoginActivity();
+  }catch(e){
+    console.error('Failed to clear login activity:', e);
+    toast('⚠ Could not clear login activity — check your connection');
+  }
+}
 
 /* ---- Change password (admin only, while logged in) ----
    The admin can update the password for any of the three accounts from
