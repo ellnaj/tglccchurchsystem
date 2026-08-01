@@ -972,7 +972,7 @@
         <div class="perm-row">
           <div class="perm-row-text">
             <div class="perm-title">Worker milestone</div>
-            <div class="perm-desc">"Started as worker" checkbox and worker start date, on the member form.</div>
+            <div class="perm-desc">"Started as worker" and "Started as volunteer" checkboxes and their start dates, on the member form.</div>
           </div>
           <label class="perm-switch">
             <input type="checkbox" id="perm-worker">
@@ -1067,8 +1067,9 @@
   <div class="tabs">
     <button class="tab-btn active" data-tab="roster" onclick="setTab('roster')">Active <span class="count" id="rosterCount"></span></button>
     <button class="tab-btn" data-tab="inactive" onclick="setTab('inactive')">Inactive <span class="count" id="inactiveCount"></span></button>
-    <button class="tab-btn" data-tab="attendance" onclick="setTab('attendance')">Attendance Record <span class="count" id="attendanceLogCount"></span></button>
-    <button class="tab-btn" data-tab="workers" onclick="setTab('workers')">Worker Milestones <span class="count" id="workerCount"></span></button>
+    <button class="tab-btn" data-tab="attendance" onclick="setTab('attendance')">Attendance <span class="count" id="attendanceLogCount"></span></button>
+    <button class="tab-btn" data-tab="workers" onclick="setTab('workers')">Worker Milestones<span class="count" id="workerCount"></span></button>
+    <button class="tab-btn" data-tab="volunteers" onclick="setTab('volunteers')">Volunteer <span class="count" id="volunteerCount"></span></button>
     <button class="tab-btn" data-tab="birthdays" onclick="setTab('birthdays')">Birthdays <span class="count" id="bdayCount"></span></button>
     <button class="tab-btn" data-tab="trainings" onclick="setTab('trainings')">Trainings <span class="count" id="trainingCount"></span></button>
     <button class="tab-btn" data-tab="structure" onclick="setTab('structure')">Church Structure</button>
@@ -1098,6 +1099,7 @@
       <div class="stat">Total members <b id="statTotal">0</b></div>
       <div class="stat stat-clickable" onclick="openBaptizedBreakdown()" title="Click to see baptized vs. unbaptized breakdown">Baptized <b id="statBaptized">0</b></div>
       <div class="stat stat-clickable" onclick="openWorkersBreakdown()" title="Click to see workers vs. leaders breakdown">Workers/leaders <b id="statWorkers">0</b></div>
+      <div class="stat">Volunteers <b id="statVolunteersTotal">0</b></div>
     </div>
 
     <div class="roster-wrap">
@@ -1143,7 +1145,6 @@
             <th>Age</th>
             <th>Birthday</th>
             <th>Ministry</th>
-            <th>Notes</th>
             <th>Contact</th>
             <th></th>
           </tr>
@@ -1303,6 +1304,7 @@
         <option value="25">25+ years</option>
       </select>
     </div>
+    <div class="hint" style="margin-top:-6px;">Years as Worker adds a member's original worker period (from their first "Worker since" date up to their first-ever "Marked inactive" date, found in Notes) to their current worker stint (their current start date up to today). "Started as Worker" always shows their current start date; rows marked with ↺ have that original period factored into the year count.</div>
 
     <div class="stat-strip">
       <div class="stat">5-year workers <b id="statWorkerMilestone5">0</b></div>
@@ -1328,6 +1330,50 @@
       <div class="empty-state" id="workerAnniversaryEmptyState" style="display:none;">
         <h3>No worker start dates yet</h3>
         <div>Mark a member as "Started as worker" and set their worker start date to track worker milestones here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VOLUNTEER MILESTONES VIEW -->
+  <div id="view-volunteers" style="display:none;">
+    <div class="toolbar">
+      <input class="search" id="searchBoxVolunteer" type="text" placeholder="Search name or ministry" oninput="renderVolunteerAnniversary()">
+      <select class="filter" id="volunteerMilestoneFilter" onchange="renderVolunteerAnniversary()">
+        <option value="">All volunteers</option>
+        <option value="5">5 years</option>
+        <option value="10">10 years</option>
+        <option value="15">15 years</option>
+        <option value="20">20 years</option>
+        <option value="25">25+ years</option>
+      </select>
+    </div>
+
+    <div class="stat-strip">
+      <div class="stat">5-year volunteers <b id="statVolunteerMilestone5">0</b></div>
+      <div class="stat">10-year volunteers <b id="statVolunteerMilestone10">0</b></div>
+      <div class="stat">15-year volunteers <b id="statVolunteerMilestone15">0</b></div>
+      <div class="stat">20-year volunteers <b id="statVolunteerMilestone20">0</b></div>
+    </div>
+
+    <div class="roster-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>Name</th>
+            <th>Started as Volunteer</th>
+            <th>Years at Service</th>
+            <th>Ministry</th>
+            <th>Ministry Head</th>
+            <th>Milestone</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="volunteerAnniversaryBody"></tbody>
+      </table>
+      <div class="empty-state" id="volunteerAnniversaryEmptyState" style="display:none;">
+        <h3>No volunteer start dates yet</h3>
+        <div>Mark a member as "Started as volunteer" and set their volunteer start date to track volunteer years of service here.</div>
       </div>
     </div>
   </div>
@@ -1441,6 +1487,13 @@
         </div>
         <div class="field"><label>Baptism date</label><input type="date" id="f-baptized-date"></div>
       </div>
+      <div class="form-grid">
+        <div class="field">
+          <div class="check-row"><input type="checkbox" id="f-volunteer-check" onchange="handleVolunteerCheckChange()"><label>Started as volunteer</label></div>
+        </div>
+        <div class="field"><label>Volunteer start date</label><input type="date" id="f-volunteer-date"></div>
+      </div>
+      <div class="hint" style="margin-top:-6px;margin-bottom:14px;">A volunteer can't also be marked as a worker or leader (and vice versa) — checking one disables the others.</div>
       <div class="form-grid">
         <div class="field">
           <div class="check-row"><input type="checkbox" id="f-worker-check" onchange="handleWorkerCheckChange()"><label>Started as worker</label></div>
@@ -1620,6 +1673,8 @@ function memberToDbRow(m){
     inviter: m.inviter || '',
     baptized: !!m.baptized,
     baptized_date: m.baptizedDate || null,
+    volunteer: !!m.volunteer,
+    volunteer_date: m.volunteerDate || null,
     worker: !!m.worker,
     worker_date: m.workerDate || null,
     leader: !!m.leader,
@@ -1643,6 +1698,8 @@ function dbRowToMember(r){
     inviter: r.inviter || '',
     baptized: !!r.baptized,
     baptizedDate: r.baptized_date || '',
+    volunteer: !!r.volunteer,
+    volunteerDate: r.volunteer_date || '',
     worker: !!r.worker,
     workerDate: r.worker_date || '',
     leader: !!r.leader,
@@ -2224,6 +2281,89 @@ function calcYears(startedAttending){
   return years >= 0 ? years : null;
 }
 
+// ---- Cumulative Worker tenure (accounts for deactivation/reactivation gaps) ----
+// When a member is marked inactive and later reactivated, setActive() logs
+// two dated lines into their Notes field, e.g.:
+//   [Aug 1, 2020] Marked inactive.
+//   [Aug 20, 2020] Reactivated. Previously — Ministry/Roles: ... · Worker since Jan 1, 2014 ...
+// and then clears their live worker/workerDate fields. That means a member's
+// current workerDate only reflects their MOST RECENT stint as a worker — their
+// original worker service gets "lost" once they're reactivated, even though
+// it's still preserved in the note text. This helper reconstructs that
+// original start date and first-ever deactivation date so tenure can
+// include the original period.
+//
+// A member may be deactivated/reactivated more than once, but only the
+// very first deactivation is used — later cycles in between aren't
+// separately tracked, since the current workerDate already represents
+// their latest, still-active stint.
+
+// Finds the member's original worker start date and their FIRST-EVER
+// "Marked inactive" date from the notes (the "Worker since <date>" that
+// was in effect at that first deactivation, confirmed by the "Reactivated"
+// line that logged it). Returns {originalStart, firstInactive} or null if
+// the member has no deactivation history on file.
+function originalWorkerPeriodFromNotes(notes){
+  if(!notes) return null;
+  const lineRe = /\[([A-Za-z]{3} \d{1,2}, \d{4})\]\s*([^\n]*)/g;
+  const events = [];
+  let match;
+  while((match = lineRe.exec(notes))){
+    const date = new Date(match[1] + ' 00:00:00');
+    if(isNaN(date)) continue;
+    const text = match[2].trim();
+    if(/^Marked inactive\.?/i.test(text)){
+      events.push({ type: 'inactive', date });
+    } else if(/^Reactivated\./i.test(text)){
+      const wsMatch = text.match(/Worker since ([A-Za-z]{3} \d{1,2}, \d{4})/);
+      const workerSince = wsMatch ? new Date(wsMatch[1] + ' 00:00:00') : null;
+      events.push({ type: 'reactivated', date, workerSince: (workerSince && !isNaN(workerSince)) ? workerSince : null });
+    }
+  }
+  if(!events.length) return null;
+  // Notes entries are written newest-first (prepended), so sort by the
+  // date each event actually carries to get true chronological order —
+  // don't rely on where a line sits in the text.
+  events.sort((a,b)=> a.date - b.date);
+  const firstInactive = events.find(e=>e.type === 'inactive');
+  if(!firstInactive) return null;
+  // The "Reactivated" line that closed out that first deactivation is the
+  // next reactivated event carrying a worker-since date before it.
+  const closingReactivation = events.find(e=>e.type === 'reactivated' && e.date >= firstInactive.date && e.workerSince && e.workerSince < firstInactive.date);
+  if(!closingReactivation) return null;
+  return { originalStart: closingReactivation.workerSince, firstInactive: firstInactive.date };
+}
+
+// Cumulative worker tenure, computed as:
+//   (today − original "Worker since" date)
+//   − (current workerDate − first-ever "Marked inactive" date)
+// i.e. the full span since they first became a worker, with the gap
+// between their first deactivation and their current start date deducted
+// out. The displayed "Started as Worker" date stays the member's actual
+// current workerDate — only the year count is cumulative.
+function workerTenureInfo(m){
+  if(!m.worker || !m.workerDate) return { years: null, hasHistory: false };
+  const currentStart = new Date(m.workerDate + 'T00:00:00');
+  const today = new Date();
+  if(isNaN(currentStart)) return { years: null, hasHistory: false };
+
+  const orig = originalWorkerPeriodFromNotes(m.notes);
+  let totalMs;
+  let hasHistory = false;
+  if(orig){
+    totalMs = (today - orig.originalStart) - (currentStart - orig.firstInactive);
+    hasHistory = true;
+  } else {
+    totalMs = today - currentStart;
+  }
+
+  if(totalMs <= 0) return { years: null, hasHistory: false };
+  const days = totalMs / (1000 * 60 * 60 * 24);
+  const years = Math.floor(days / 365.25);
+  return { years, hasHistory };
+}
+
+
 // ---- Attendance Record (daily churched-in log + full history from the
 // Attendance Record kiosk, read from the "attendance_records" table). ----
 function todayStr(){
@@ -2748,7 +2888,10 @@ function renderWorkerAnniversary(){
 
   const withYears = members
     .filter(m=>m.worker && m.workerDate && m.active !== false)
-    .map(m=>({...m, years: calcYears(m.workerDate)}))
+    .map(m=>{
+      const tenure = workerTenureInfo(m);
+      return {...m, years: tenure.years, hasWorkerHistory: tenure.hasHistory};
+    })
     .filter(m=>m.years !== null);
 
   let list = withYears.filter(m=>{
@@ -2763,12 +2906,13 @@ function renderWorkerAnniversary(){
   const body = $('workerAnniversaryBody');
   body.innerHTML = list.map(m=>{
     const isMilestone = m.years > 0 && m.years % 5 === 0;
+    const historyTitle = m.hasWorkerHistory ? ' title="Years as Worker includes worker time from before a deactivation/reactivation"' : '';
     return `
     <tr onclick="openDetail('${m.id}')">
       <td>${avatarHtml(m, 'avatar', 'avatar-fallback')}</td>
       <td class="name-cell">${escapeHtml(m.name)}</td>
       <td class="mono muted">${fmtDate(m.workerDate)}</td>
-      <td class="mono">${m.years} yr${m.years===1?'':'s'}</td>
+      <td class="mono"${historyTitle}>${m.years} yr${m.years===1?'':'s'}${m.hasWorkerHistory ? ' <span class="muted">↺</span>' : ''}</td>
       <td>${isMilestone ? `<span class="badge badge-gold">${m.years}-Year Worker</span>` : '<span class="muted">—</span>'}</td>
       <td><span class="badge ${m.active===false ? 'badge-no':'badge-yes'}">${m.active===false ? 'Inactive':'Active'}</span></td>
     </tr>`;
@@ -2782,6 +2926,82 @@ function renderWorkerAnniversary(){
   $('statWorkerMilestone15').textContent = allYears.filter(y=>y===15).length;
   $('statWorkerMilestone20').textContent = allYears.filter(y=>y===20).length;
   $('workerCount').textContent = withYears.length;
+}
+
+// Given a Church Role value (e.g. "Music Ministry Member"), finds the
+// active member who currently holds that same ministry's "Ministry Head"
+// (or "Head Pastor", for the Pastors category) role — i.e. who this
+// volunteer/worker's ministry head is. Returns null if the role isn't
+// part of a standard ministry, or no one holds that ministry's head role.
+function ministryHeadForRole(role){
+  const category = roleCategoryOf(role);
+  if(!category || category === OTHER_CATEGORY) return null;
+  const cat = ROLE_CATALOG.find(c=>c.category===category);
+  if(!cat) return null;
+  const headEntry = cat.roles.find(r=>r.label==='Ministry Head' || r.label==='Head Pastor');
+  if(!headEntry) return null;
+  return findRoleHolder(headEntry.value, null);
+}
+
+// Summarizes a member's ministry/ministry-head info across every Church
+// Role they hold, for display on the Volunteer Milestones tab.
+function volunteerMinistryInfo(m){
+  const roles = memberRoles(m);
+  if(!roles.length) return { ministryText: '—', headText: '—' };
+  const entries = roles.map(role=>{
+    const head = ministryHeadForRole(role);
+    return { category: roleCategoryOf(role) || OTHER_CATEGORY, headName: head ? head.name : null };
+  });
+  const ministryText = [...new Set(entries.map(e=>e.category))].join(', ') || '—';
+  const headText = [...new Set(entries.map(e=>e.headName).filter(Boolean))].join(', ') || '—';
+  return { ministryText, headText };
+}
+
+function renderVolunteerAnniversary(){
+  const q = ($('searchBoxVolunteer') ? $('searchBoxVolunteer').value : '').trim().toLowerCase();
+  const milestoneFilter = $('volunteerMilestoneFilter').value;
+
+  const withYears = members
+    .filter(m=>m.volunteer && m.volunteerDate && m.active !== false)
+    .map(m=>({...m, years: calcYears(m.volunteerDate)}))
+    .filter(m=>m.years !== null);
+
+  let list = withYears.filter(m=>{
+    const matchesQ = !q || [m.name, m.ministry].some(v=>(v||'').toLowerCase().includes(q));
+    let matchesMilestone = true;
+    if(milestoneFilter === '25'){ matchesMilestone = m.years >= 25 && m.years % 5 === 0; }
+    else if(milestoneFilter){ matchesMilestone = m.years === parseInt(milestoneFilter, 10); }
+    return matchesQ && matchesMilestone;
+  });
+  list.sort((a,b)=> b.years - a.years);
+
+  const body = $('volunteerAnniversaryBody');
+  body.innerHTML = list.map(m=>{
+    const isMilestone = m.years > 0 && m.years % 5 === 0;
+    const { ministryText, headText } = volunteerMinistryInfo(m);
+    return `
+    <tr onclick="openDetail('${m.id}')">
+      <td>${avatarHtml(m, 'avatar', 'avatar-fallback')}</td>
+      <td class="name-cell">${escapeHtml(m.name)}</td>
+      <td class="mono muted">${fmtDate(m.volunteerDate)}</td>
+      <td class="mono">${m.years} yr${m.years===1?'':'s'}</td>
+      <td>${escapeHtml(ministryText)}</td>
+      <td>${escapeHtml(headText)}</td>
+      <td>${isMilestone ? `<span class="badge badge-gold">${m.years}-Year Volunteer</span>` : '<span class="muted">—</span>'}</td>
+      <td><span class="badge ${m.active===false ? 'badge-no':'badge-yes'}">${m.active===false ? 'Inactive':'Active'}</span></td>
+    </tr>`;
+  }).join('');
+
+  $('volunteerAnniversaryEmptyState').style.display = list.length ? 'none' : '';
+
+  const allYears = withYears.map(m=>m.years);
+  $('statVolunteerMilestone5').textContent = allYears.filter(y=>y===5).length;
+  $('statVolunteerMilestone10').textContent = allYears.filter(y=>y===10).length;
+  $('statVolunteerMilestone15').textContent = allYears.filter(y=>y===15).length;
+  $('statVolunteerMilestone20').textContent = allYears.filter(y=>y===20).length;
+  $('volunteerCount').textContent = withYears.length;
+  const totalVolunteers = activeMembers().filter(m=>m.volunteer).length;
+  if($('statVolunteersTotal')) $('statVolunteersTotal').textContent = totalVolunteers;
 }
 
 function fmtDate(d){
@@ -2799,12 +3019,12 @@ function todayIso(){
   return `${yyyy}-${mm}-${dd}`;
 }
 
-// Appends a dated log line to existing notes text (does not overwrite
-// anything the user already wrote).
+// Prepends a dated log line to existing notes text (does not overwrite
+// anything the user already wrote) — newest entries always sit at the top.
 function appendNoteText(baseNotes, text){
   const entry = `[${fmtDate(todayIso())}] ${text}`;
   const base = (baseNotes || '').trim();
-  return base ? `${base}\n${entry}` : entry;
+  return base ? `${entry}\n${base}` : entry;
 }
 
 // Summarizes a member's ministry/worker/leader standing at the moment
@@ -2813,6 +3033,7 @@ function membershipHistorySummary(m){
   const parts = [];
   const roles = memberRoles(m);
   parts.push(roles.length ? `Ministry/Roles: ${roles.join(', ')}` : 'Ministry/Roles: none on file');
+  if(m.volunteer) parts.push(`Volunteer since ${m.volunteerDate ? fmtDate(m.volunteerDate) : 'unknown date'}`);
   if(m.worker) parts.push(`Worker since ${m.workerDate ? fmtDate(m.workerDate) : 'unknown date'}`);
   if(m.leader) parts.push(`Leader since ${m.leaderDate ? fmtDate(m.leaderDate) : 'unknown date'}`);
   return parts.join(' · ');
@@ -2824,12 +3045,14 @@ function setTab(tab){
   $('view-inactive').style.display = tab==='inactive' ? '' : 'none';
   $('view-attendance').style.display = tab==='attendance' ? '' : 'none';
   $('view-workers').style.display = tab==='workers' ? '' : 'none';
+  $('view-volunteers').style.display = tab==='volunteers' ? '' : 'none';
   $('view-birthdays').style.display = tab==='birthdays' ? '' : 'none';
   $('view-trainings').style.display = tab==='trainings' ? '' : 'none';
   $('view-structure').style.display = tab==='structure' ? '' : 'none';
   if(tab==='inactive'){ renderInactive(); }
   if(tab==='attendance'){ setAttendanceSub('overview'); }
   if(tab==='workers'){ renderWorkerAnniversary(); }
+  if(tab==='volunteers'){ renderVolunteerAnniversary(); }
   if(tab==='birthdays'){ renderCelebrants(); renderBirthdays(); renderMonths(); }
   if(tab==='trainings'){ renderTrainings(); }
   if(tab==='structure'){ renderStructure(); }
@@ -2847,6 +3070,7 @@ function renderAll(){
   renderRoster();
   renderInactive();
   renderWorkerAnniversary();
+  renderVolunteerAnniversary();
   renderCelebrants();
   renderMonths();
   renderTrainings();
@@ -3011,7 +3235,6 @@ function renderInactive(){
       <td class="mono">${calcAge(m.birthday)}</td>
       <td class="mono muted">${m.birthday ? fmtDate(m.birthday) : '—'}</td>
       <td>${roleBadgesHtml(m, true)}</td>
-      <td>${m.notes ? escapeHtml(m.notes) : '<span class="muted">—</span>'}</td>
       <td class="mono muted">${m.contact ? escapeHtml(m.contact) : '—'}</td>
       <td>
         <div class="row-actions">
@@ -3034,6 +3257,9 @@ async function setActive(id, isActive){
   const becomingInactive = !isActive && !wasInactive;
   const reactivating = isActive && wasInactive;
 
+  if(becomingInactive && !confirm(`Mark ${m.name || 'this member'} as inactive?`)) return;
+  if(reactivating && !confirm(`Reactivate ${m.name || 'this member'}?`)) return;
+
   if(becomingInactive){
     m.notes = appendNoteText(m.notes, 'Marked inactive.');
   }
@@ -3043,6 +3269,8 @@ async function setActive(id, isActive){
     m.notes = appendNoteText(m.notes, `Reactivated. Previously — ${membershipHistorySummary(m)}`);
     // Reactivating clears prior worker/leader/church-role info so it
     // reflects the member's fresh standing rather than stale history.
+    m.volunteer = false;
+    m.volunteerDate = '';
     m.worker = false;
     m.workerDate = '';
     m.leader = false;
@@ -3591,6 +3819,7 @@ async function openDetail(id){
           ${isInactive ? '' : detailItem('Started attending', m.startedAttending ? fmtDate(m.startedAttending) : '—', !m.startedAttending)}
           ${detailItem('Invited by', m.inviter || '—', !m.inviter)}
           ${detailItem('Baptized', yesNo(m.baptized, m.baptizedDate), !m.baptized)}
+          ${isInactive ? '' : detailItem('Started as volunteer', yesNo(m.volunteer, m.volunteerDate), !m.volunteer)}
           ${isInactive ? '' : detailItem('Started as worker', yesNo(m.worker, m.workerDate), !m.worker)}
           ${detailItem('Started as leader', yesNo(m.leader, m.leaderDate), !m.leader)}
         </div>
@@ -3830,6 +4059,9 @@ function openForm(id){
   $('f-leader-check').checked = !!m.leader;
   $('f-leader-date').value = m.leaderDate || '';
   handleLeaderCheckChange();
+  $('f-volunteer-check').checked = !!m.volunteer;
+  $('f-volunteer-date').value = m.volunteerDate || '';
+  handleVolunteerCheckChange();
   $('f-notes').value = m.notes || '';
   $('f-active-check').checked = m.active !== false;
   currentPhoto = m.photo || '';
@@ -3873,6 +4105,10 @@ function applyMemberFormFieldLock(isEditing, m){
       if(!staffPermissions.worker){
         lockFieldIds.push('f-worker-date');
         lockCheckIds.push('f-worker-check');
+        // "Started as volunteer" shares the same Worker milestone
+        // permission bit, since it's the same tier of edit.
+        lockFieldIds.push('f-volunteer-date');
+        lockCheckIds.push('f-volunteer-check');
       }
       if(!staffPermissions.leader){
         lockFieldIds.push('f-leader-date');
@@ -3891,8 +4127,8 @@ function applyMemberFormFieldLock(isEditing, m){
     }
   }
 
-  const allFieldIds = ['f-name', 'f-birthday', 'f-contact', 'f-address', 'f-started', 'f-inviter', 'f-baptized-date', 'f-worker-date', 'f-leader-date', 'f-notes'];
-  const allCheckIds = ['f-baptized-check', 'f-worker-check', 'f-leader-check', 'f-active-check'];
+  const allFieldIds = ['f-name', 'f-birthday', 'f-contact', 'f-address', 'f-started', 'f-inviter', 'f-baptized-date', 'f-worker-date', 'f-leader-date', 'f-volunteer-date', 'f-notes'];
+  const allCheckIds = ['f-baptized-check', 'f-worker-check', 'f-leader-check', 'f-volunteer-check', 'f-active-check'];
 
   allFieldIds.forEach(id=>{
     const el = $(id);
@@ -3910,6 +4146,16 @@ function applyMemberFormFieldLock(isEditing, m){
     const wrap = el.closest('.field');
     if(wrap) wrap.classList.toggle('field-locked', locked);
   });
+
+  // Layer the Volunteer <-> Worker/Leader mutual-exclusivity locking on
+  // top of the Staff-permission locks set above, so neither system can
+  // accidentally re-enable a checkbox/date the other one locked.
+  formPermissionLocks = {
+    worker: lockCheckIds.includes('f-worker-check'),
+    leader: lockCheckIds.includes('f-leader-check'),
+    volunteer: lockCheckIds.includes('f-volunteer-check'),
+  };
+  updateServiceStatusLocks();
 
   // Photo is never locked under these rules — leave it fully available
   // whenever the form itself is reachable.
@@ -3983,13 +4229,24 @@ function updateAgePreview(){
   $('f-age').value = age === '' ? '' : age + ' years old';
 }
 
-// Unchecking "Started as worker" / "Started as leader" removes the
-// associated start-date info for that member, since it no longer applies.
+// Unchecking "Started as worker" / "Started as leader" / "Started as
+// volunteer" removes the associated start-date info for that member,
+// since it no longer applies.
+//
+// "Started as volunteer" is mutually exclusive with "Started as worker"
+// and "Started as leader": a member is either a volunteer, or a worker
+// and/or leader, never both at once. Checking one side clears and locks
+// the other side's checkbox(es) and date(s); unchecking releases the lock.
 function handleWorkerCheckChange(){
   const checked = $('f-worker-check').checked;
   const dateField = $('f-worker-date');
   if(!checked){ dateField.value = ''; }
   dateField.disabled = !checked;
+  if(checked){
+    $('f-volunteer-check').checked = false;
+    $('f-volunteer-date').value = '';
+  }
+  updateServiceStatusLocks();
   updateChurchRoleAvailability();
   renderRoleCategories();
 }
@@ -3999,17 +4256,70 @@ function handleLeaderCheckChange(){
   const dateField = $('f-leader-date');
   if(!checked){ dateField.value = ''; }
   dateField.disabled = !checked;
+  if(checked){
+    $('f-volunteer-check').checked = false;
+    $('f-volunteer-date').value = '';
+  }
+  updateServiceStatusLocks();
   updateChurchRoleAvailability();
   renderRoleCategories();
 }
 
+function handleVolunteerCheckChange(){
+  const checked = $('f-volunteer-check').checked;
+  const dateField = $('f-volunteer-date');
+  if(!checked){ dateField.value = ''; }
+  dateField.disabled = !checked;
+  if(checked){
+    $('f-worker-check').checked = false;
+    $('f-worker-date').value = '';
+    $('f-leader-check').checked = false;
+    $('f-leader-date').value = '';
+  }
+  updateServiceStatusLocks();
+  updateChurchRoleAvailability();
+  renderRoleCategories();
+}
+
+// Tracks which of the three "started as ..." checkboxes are locked out by
+// Staff permissions (see applyMemberFormFieldLock). Mutual-exclusivity
+// locking (below) is layered on top of these and must never re-enable a
+// checkbox/date that's locked here.
+let formPermissionLocks = { worker:false, leader:false, volunteer:false };
+
+// Keeps "Started as volunteer" mutually exclusive with "Started as
+// worker"/"Started as leader": whichever side has a box checked disables
+// the other side's checkbox (and its date field), on top of whatever
+// Staff-permission locks already apply.
+function updateServiceStatusLocks(){
+  const volunteerChecked = $('f-volunteer-check').checked;
+  const workerChecked = $('f-worker-check').checked;
+  const leaderChecked = $('f-leader-check').checked;
+
+  $('f-worker-check').disabled = formPermissionLocks.worker || volunteerChecked;
+  $('f-leader-check').disabled = formPermissionLocks.leader || volunteerChecked;
+  $('f-volunteer-check').disabled = formPermissionLocks.volunteer || workerChecked || leaderChecked;
+
+  $('f-worker-date').disabled = formPermissionLocks.worker || volunteerChecked || !workerChecked;
+  $('f-leader-date').disabled = formPermissionLocks.leader || volunteerChecked || !leaderChecked;
+  $('f-volunteer-date').disabled = formPermissionLocks.volunteer || workerChecked || leaderChecked || !volunteerChecked;
+
+  ['f-worker-check','f-leader-check','f-volunteer-check','f-worker-date','f-leader-date','f-volunteer-date'].forEach(id=>{
+    const el = $(id);
+    if(!el) return;
+    const wrap = el.closest('.field');
+    if(wrap) wrap.classList.toggle('field-locked', el.disabled);
+  });
+}
+
 // The Church Roles picker only makes sense once a member is marked as
-// "Started as worker" and/or "Started as leader" — a role can't be
-// assigned to someone who hasn't started serving yet. Keep the picker
-// enabled/disabled in sync with those two checkboxes, and wipe out any
-// selected roles the moment both boxes are unchecked.
+// "Started as worker", "Started as leader", and/or "Started as
+// volunteer" — a role can't be assigned to someone who hasn't started
+// serving yet. Keep the picker enabled/disabled in sync with those three
+// checkboxes, and wipe out any selected roles the moment all three are
+// unchecked.
 function updateChurchRoleAvailability(){
-  const enabled = $('f-worker-check').checked || $('f-leader-check').checked;
+  const enabled = $('f-worker-check').checked || $('f-leader-check').checked || $('f-volunteer-check').checked;
   const btn = $('selectRolesBtn');
   const field = $('churchRoleField');
   if(btn) btn.disabled = !enabled;
@@ -4018,7 +4328,7 @@ function updateChurchRoleAvailability(){
   if(hint){
     hint.textContent = enabled
       ? 'Tap "Select Church Roles" to choose from the ministry list, or add a custom role.'
-      : 'Check "Started as worker" or "Started as leader" above to select Church Roles.';
+      : 'Check "Started as worker", "Started as leader", or "Started as volunteer" above to select Church Roles.';
   }
   if(!enabled && formChurchRoles.length){
     formChurchRoles = [];
@@ -4027,12 +4337,12 @@ function updateChurchRoleAvailability(){
   }
 }
 
-// If a Church Role is on file, the member must be flagged as a worker
-// and/or leader — auto-check "Started as worker" so the two stay
-// consistent whenever a role gets added.
+// If a Church Role is on file, the member must be flagged as a worker,
+// leader, and/or volunteer — auto-check "Started as worker" so the two
+// stay consistent whenever a role gets added.
 function ensureWorkerOrLeaderForRoles(){
   if(!formChurchRoles.length) return;
-  if($('f-worker-check').checked || $('f-leader-check').checked) return;
+  if($('f-worker-check').checked || $('f-leader-check').checked || $('f-volunteer-check').checked) return;
   $('f-worker-check').checked = true;
   handleWorkerCheckChange();
 }
@@ -4080,8 +4390,8 @@ function toggleChurchRole(role){
       renderRoleCategories();
       return;
     }
-    if(isMemberRoleLabel(label) && !$('f-worker-check').checked){
-      toast('Check "Started as worker" first to select a Member role.');
+    if(isMemberRoleLabel(label) && !$('f-worker-check').checked && !$('f-volunteer-check').checked){
+      toast('Check "Started as worker" or "Started as volunteer" first to select a Member role.');
       renderRoleCategories();
       return;
     }
@@ -4152,8 +4462,8 @@ function renderRoleTagsSummary(){
 }
 
 function openRoleModal(){
-  if(!$('f-worker-check').checked && !$('f-leader-check').checked){
-    toast('Check "Started as worker" or "Started as leader" first.');
+  if(!$('f-worker-check').checked && !$('f-leader-check').checked && !$('f-volunteer-check').checked){
+    toast('Check "Started as worker", "Started as leader", or "Started as volunteer" first.');
     return;
   }
   renderRoleTags();
@@ -4191,6 +4501,8 @@ function renderRoleCategories(){
     if(!roles.length) return '';
     const workerChecked = $('f-worker-check') ? $('f-worker-check').checked : true;
     const leaderChecked = $('f-leader-check') ? $('f-leader-check').checked : true;
+    const volunteerChecked = $('f-volunteer-check') ? $('f-volunteer-check').checked : false;
+    const memberRolesEnabled = workerChecked || volunteerChecked;
     return `
       <div class="role-cat-group">
         <div class="role-cat-label">${escapeHtml(cat.category)}</div>
@@ -4200,12 +4512,12 @@ function renderRoleCategories(){
             const holder = (!selected && isSinglePositionRole(r.value)) ? findRoleHolder(r.value, editingId) : null;
             const taken = !!holder;
             const needsLeader = !selected && isLeadershipRoleLabel(r.label) && !leaderChecked;
-            const needsWorker = !selected && isMemberRoleLabel(r.label) && !workerChecked;
+            const needsWorker = !selected && isMemberRoleLabel(r.label) && !memberRolesEnabled;
             const disabled = taken || needsLeader || needsWorker;
             let note = '';
             if(taken) note = ` <span class="role-taken-note">(taken by ${escapeHtml(holder.name)})</span>`;
             else if(needsLeader) note = ` <span class="role-taken-note">(check "Started as leader")</span>`;
-            else if(needsWorker) note = ` <span class="role-taken-note">(check "Started as worker")</span>`;
+            else if(needsWorker) note = ` <span class="role-taken-note">(check "Started as worker" or "Started as volunteer")</span>`;
             return `
             <label class="role-check ${disabled ? 'role-check-disabled' : ''}">
               <input type="checkbox" data-role="${escapeHtml(r.value)}" ${selected?'checked':''} ${disabled?'disabled':''}>
@@ -4311,8 +4623,10 @@ async function saveMember(){
     inviter: $('f-inviter').value.trim(),
     baptized: $('f-baptized-check').checked,
     baptizedDate: $('f-baptized-date').value,
-    // Reactivating clears prior worker/leader/church-role info so it
-    // reflects the member's fresh standing rather than stale history.
+    // Reactivating clears prior volunteer/worker/leader/church-role info
+    // so it reflects the member's fresh standing rather than stale history.
+    volunteer: reactivated ? false : $('f-volunteer-check').checked,
+    volunteerDate: reactivated ? '' : $('f-volunteer-date').value,
     worker: reactivated ? false : $('f-worker-check').checked,
     workerDate: reactivated ? '' : $('f-worker-date').value,
     leader: reactivated ? false : $('f-leader-check').checked,
@@ -4546,6 +4860,8 @@ function handleImport(event){
           inviter: String(norm['inviter']||''),
           baptized: parseBool(norm['baptized']),
           baptizedDate: toIsoDate(norm['baptized date']),
+          volunteer: parseBool(norm['started as volunteer']),
+          volunteerDate: toIsoDate(norm['volunteer date']),
           worker: parseBool(norm['started as worker']),
           workerDate: toIsoDate(norm['worker date']),
           leader: parseBool(norm['started as leader'] || norm['leader']),
@@ -4628,6 +4944,8 @@ function exportExcel(){
     'Inviter': m.inviter || '',
     'Baptized': m.baptized ? 'Yes' : 'No',
     'Baptized Date': m.baptizedDate || '',
+    'Started as Volunteer': m.volunteer ? 'Yes' : 'No',
+    'Volunteer Date': m.volunteerDate || '',
     'Started as Worker': m.worker ? 'Yes' : 'No',
     'Worker Date': m.workerDate || '',
     'Started as Leader': m.leader ? 'Yes' : 'No',
