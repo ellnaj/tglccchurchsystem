@@ -179,31 +179,40 @@
   }
   .celebrants-sub{font-size:12.5px;color:var(--ink-soft);margin-top:4px;}
   .celebrants-grid{
-    display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,220px));gap:20px;justify-content:center;
+    display:grid;grid-template-columns:repeat(3, 228px);gap:22px;justify-content:center;
   }
   .celeb-card{
+    width:228px;height:280px;
     background:#fff;border-radius:16px;padding:20px 16px 18px;text-align:center;
     border:1px solid var(--line);box-shadow:0 6px 18px rgba(38,47,112,0.08);
     transition:transform 0.15s ease,box-shadow 0.15s ease;
+    display:flex;flex-direction:column;align-items:center;overflow:hidden;
   }
   .celeb-card:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(38,47,112,0.14);}
   .celeb-photo{
-    width:88px;height:88px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 12px;
+    width:88px;height:88px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 12px;flex-shrink:0;
     border:3px solid var(--green-tint);box-shadow:0 3px 10px rgba(38,47,112,0.15);
   }
   .celeb-photo-fallback{
-    width:88px;height:88px;border-radius:50%;margin:0 auto 12px;background:var(--green-tint);
+    width:88px;height:88px;border-radius:50%;margin:0 auto 12px;background:var(--green-tint);flex-shrink:0;
     color:var(--green-dark);display:flex;align-items:center;justify-content:center;
     font-size:26px;font-weight:700;font-family:var(--font-display);
     border:3px solid #fff;box-shadow:0 3px 10px rgba(38,47,112,0.15);
   }
-  .celeb-name{font-family:var(--font-display);font-weight:700;font-size:16.5px;color:var(--ink);margin-bottom:5px;line-height:1.25;}
+  .celeb-name{
+    font-family:var(--font-display);font-weight:700;font-size:16.5px;color:var(--ink);margin-bottom:5px;line-height:1.25;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+    min-height:calc(1.25em * 2);width:100%;flex-shrink:0;
+  }
   .celeb-date{
     font-family:var(--font-mono);font-size:12.5px;font-weight:700;color:#fff;background:var(--green);
-    display:inline-block;padding:3px 11px;border-radius:20px;margin-bottom:7px;letter-spacing:0.02em;
+    display:inline-block;padding:3px 11px;border-radius:20px;margin-bottom:7px;letter-spacing:0.02em;flex-shrink:0;
   }
-  .celeb-age{font-size:12.5px;color:var(--ink-soft);margin-bottom:2px;}
-  .celeb-ministry{font-size:11.5px;color:var(--ink-faint);font-style:italic;margin-top:2px;}
+  .celeb-age{font-size:12.5px;color:var(--ink-soft);margin-bottom:2px;flex-shrink:0;}
+  .celeb-ministry{
+    font-size:11.5px;color:var(--ink-faint);font-style:italic;margin-top:2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;flex-shrink:0;
+  }
   .celebrants-empty{
     grid-column:1/-1;padding:54px 20px;text-align:center;color:var(--ink-soft);font-size:14.5px;
   }
@@ -212,7 +221,6 @@
   @media(max-width:560px){
     .celebrants-panel{padding:20px 18px 24px;border-radius:16px;}
     .celebrants-title{font-size:21px;}
-    .celebrants-grid{grid-template-columns:1fr;}
   }
 
   /* birthdays view */
@@ -737,7 +745,8 @@
   @media (max-width:900px){
     .app{padding:20px 18px 64px;}
     .masthead h1{font-size:23px;}
-    .celebrants-grid{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));}
+    .celebrants-grid{grid-template-columns:repeat(3, 190px);gap:16px;}
+    .celeb-card{width:190px;height:264px;}
     .month-grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));}
     .bday-grid{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));}
   }
@@ -780,7 +789,8 @@
     .baptism-list-row, .wl-list-row{font-size:12.5px;}
 
     /* grids collapse a step earlier */
-    .celebrants-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;}
+    .celebrants-grid{grid-template-columns:repeat(3, 160px);gap:12px;}
+    .celeb-card{width:160px;height:250px;padding:16px 12px 14px;}
     .bday-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));}
     .month-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));}
     .org-groups, .org-row{gap:10px;}
@@ -829,7 +839,8 @@
 
     .role-picker-field-compact{flex-direction:column;align-items:stretch;}
 
-    .celebrants-grid{grid-template-columns:1fr 1fr;gap:10px;}
+    .celebrants-grid{grid-template-columns:repeat(2, 150px);gap:12px;}
+    .celeb-card{width:150px;height:246px;padding:16px 12px 14px;}
     .celeb-photo,.celeb-photo-fallback{width:68px;height:68px;}
     .bday-grid{grid-template-columns:1fr;}
     .month-grid{grid-template-columns:1fr;}
@@ -851,7 +862,8 @@
   @media (max-width:380px){
     .masthead h1{font-size:15.5px;}
     .toolbar .btn, .toolbar select.filter{flex:1 1 100%;}
-    .celebrants-grid{grid-template-columns:1fr;}
+    .celebrants-grid{grid-template-columns:repeat(1, 220px);}
+    .celeb-card{width:220px;height:280px;}
   }
 
   /* touch devices: remove hover-only affordances that can stick after tap */
@@ -3601,20 +3613,27 @@ let bannerDismissed = false;
 function renderReminderBanner(){
   if(bannerDismissed){ $('reminderBanner').innerHTML=''; return; }
   const now = new Date();
-  const nextMonth = (now.getMonth() + 1) % 12;
+  // Weeks 1-3 of the month (days 1-21): show this month's birthdays.
+  // Last week of the month (day 22 onward): switch to next month's birthdays.
+  const isLastWeek = now.getDate() > 21;
+  const targetMonth = isLastWeek ? (now.getMonth() + 1) % 12 : now.getMonth();
   const list = members.filter(m=>{
     if(!m.birthday || m.active === false) return false;
-    return new Date(m.birthday+'T00:00:00').getMonth() === nextMonth;
+    return new Date(m.birthday+'T00:00:00').getMonth() === targetMonth;
   }).sort((a,b)=> new Date(a.birthday+'T00:00:00').getDate() - new Date(b.birthday+'T00:00:00').getDate());
 
   if(!list.length){ $('reminderBanner').innerHTML=''; return; }
 
-  const names = list.map(m=>`${escapeHtml(m.name)} (${MONTH_NAMES[nextMonth].slice(0,3)} ${new Date(m.birthday+'T00:00:00').getDate()})`).join(', ');
+  const monthLabel = MONTH_NAMES[targetMonth];
+  const names = list.map(m=>`${escapeHtml(m.name)} (${monthLabel.slice(0,3)} ${new Date(m.birthday+'T00:00:00').getDate()})`).join(', ');
+  const titleText = isLastWeek
+    ? `${list.length} birthday${list.length===1?'':'s'} coming up in ${monthLabel}`
+    : `${list.length} birthday${list.length===1?'':'s'} this month (${monthLabel})`;
   $('reminderBanner').innerHTML = `
     <div class="reminder-banner">
       <div class="rb-icon">&#9679;</div>
       <div>
-        <div class="rb-title">${list.length} birthday${list.length===1?'':'s'} coming up in ${MONTH_NAMES[nextMonth]}</div>
+        <div class="rb-title">${titleText}</div>
         <div class="rb-names">${names}</div>
       </div>
       <button class="rb-close" onclick="dismissBanner()" aria-label="Dismiss">&times;</button>
