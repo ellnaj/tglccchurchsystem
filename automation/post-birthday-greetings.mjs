@@ -25,6 +25,7 @@
 // `url` parameter. Nothing is fetched from or stored in the repo.
 
 import { createClient } from '@supabase/supabase-js';
+import { createHash } from 'node:crypto'; // built-in — no new dependency
 
 const {
   SUPABASE_URL,
@@ -111,7 +112,10 @@ async function getTodaysCelebrants() {
 }
 
 // ---------------------------------------------------------------------------
-// 3. Build the greeting message.
+// 3. Build the greeting message — 5 Christian templates, one theme each,
+//    picked deterministically so the same celebrant(s) on the same day
+//    always get the same message (safe to rerun), while different birthdays
+//    naturally land on different templates.
 // ---------------------------------------------------------------------------
 function joinNames(names) {
   if (names.length === 1) return names[0];
@@ -119,21 +123,68 @@ function joinNames(names) {
   return `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`;
 }
 
-function buildMessage(celebrants) {
-  const names = celebrants.map((c) => c.name);
-  const isPlural = names.length > 1;
-  const namesLine = joinNames(names);
-  const celebrateLine = isPlural
-    ? `Today, the TGLCC family celebrates our birthday members: ${namesLine}! May the Lord continue to bless each of you with good health, grace, joy, wisdom, and many more blessed years.`
-    : `Today, the TGLCC family celebrates you. May the Lord continue to bless you with good health, grace, joy, wisdom, and many more blessed years.`;
-
-  return (
+const GREETING_TEMPLATES = [
+  // 1. Blessings & Grace
+  (namesLine) =>
     `🎉🎂 HAPPY BIRTHDAY! 🎂🎉\n\n` +
-    `Happy Birthday, ${namesLine}!\n\n` +
-    `${celebrateLine}\n\n` +
-    `May His love and guidance always be with you. Have a wonderful and blessed birthday! 🙏❤️\n\n` +
-    `#TGLCCFamily #HappyBirthday #GodBless`
-  );
+    `Happy birthday, ${namesLine}!\n\n` +
+    `On this special day, the TGLCC family prays that God's grace overflows in your life. ` +
+    `May He bless you richly with good health, favor, and countless reasons to smile in the year ahead.\n\n` +
+    `"The Lord bless you and keep you." — Numbers 6:24 🙏❤️\n\n` +
+    `#TGLCCFamily #HappyBirthday #GodBless`,
+
+  // 2. Faith & Strength
+  (namesLine) =>
+    `🎉🎂 HAPPY BIRTHDAY! 🎂🎉\n\n` +
+    `Happy birthday, ${namesLine}!\n\n` +
+    `Today, the TGLCC family celebrates the faith and strength God continues to build in you. ` +
+    `May this new year find you rooted in Him, courageous in every season, and confident in His promises.\n\n` +
+    `"I can do all things through Christ who strengthens me." — Philippians 4:13 💪🙏\n\n` +
+    `#TGLCCFamily #HappyBirthday #GodBless`,
+
+  // 3. Prayer & Guidance
+  (namesLine) =>
+    `🎉🎂 HAPPY BIRTHDAY! 🎂🎉\n\n` +
+    `Happy birthday, ${namesLine}!\n\n` +
+    `The TGLCC family lifts you up in prayer today, asking the Lord to guide every step you take this new year ` +
+    `and to light your path with His wisdom and peace.\n\n` +
+    `"Trust in the Lord with all your heart, and He will make your paths straight." — Proverbs 3:5-6 🙏✨\n\n` +
+    `#TGLCCFamily #HappyBirthday #GodBless`,
+
+  // 4. Joy & Gratitude
+  (namesLine) =>
+    `🎉🎂 HAPPY BIRTHDAY! 🎂🎉\n\n` +
+    `Happy birthday, ${namesLine}!\n\n` +
+    `Today, the TGLCC family rejoices with you and gives thanks to God for the gift of your life. ` +
+    `May His joy be your strength and may gratitude fill every moment of this new chapter.\n\n` +
+    `"This is the day the Lord has made; let us rejoice and be glad in it." — Psalm 118:24 🎈❤️\n\n` +
+    `#TGLCCFamily #HappyBirthday #GodBless`,
+
+  // 5. Love & Fellowship
+  (namesLine) =>
+    `🎉🎂 HAPPY BIRTHDAY! 🎂🎉\n\n` +
+    `Happy birthday, ${namesLine}!\n\n` +
+    `The TGLCC family is grateful to walk this journey of faith alongside you. May you feel God's love ` +
+    `and the warmth of your church family surrounding you today and always.\n\n` +
+    `"Above all, love each other deeply, because love covers over a multitude of sins." — 1 Peter 4:8 🙏❤️\n\n` +
+    `#TGLCCFamily #HappyBirthday #GodBless`,
+];
+
+// Deterministic template pick: seeded from the celebrants' names (sorted, so
+// order doesn't matter) + today's date. Same celebrants + same day => same
+// index every time (safe reruns). Different day or different celebrants =>
+// likely a different template.
+function pickTemplateIndex(celebrants) {
+  const { year, month, day } = todayMonthDay(TIMEZONE);
+  const seed = celebrants.map((c) => c.name).slice().sort().join('|') + `|${year}-${month}-${day}`;
+  const hash = createHash('sha256').update(seed).digest();
+  return hash[0] % GREETING_TEMPLATES.length;
+}
+
+function buildMessage(celebrants) {
+  const namesLine = joinNames(celebrants.map((c) => c.name));
+  const template = GREETING_TEMPLATES[pickTemplateIndex(celebrants)];
+  return template(namesLine);
 }
 
 // ---------------------------------------------------------------------------
