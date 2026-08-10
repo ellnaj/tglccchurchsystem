@@ -11,6 +11,7 @@
     "post-birthdays": "node post-birthday-greetings.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.112.2"
+    "@supabase/supabase-js": "^2.x",
+    "canvas": "^2.x"
   }
 }
