@@ -147,8 +147,8 @@ const GREETING_TEMPLATES = [
   (namesLine) =>
     `Greetings from #TglccFamily!\n\n` +
     `Happy Birthday, ${namesLine}!❤️\n\n` +
-    `The TGLCC family lifts you up in prayer today, asking the Lord to guide every step you take this new year ` +
-    `and to light your path with His wisdom and peace.🙏\n\n` +
+    `Today, we celebrate with you and thank God for the gift of your life. ` +
+    `May His joy be your strength and may your heart be filled with gratitude as you step into this new chapter.🙏\n\n` +
     `"Trust in the Lord with all your heart, and He will make your paths straight." — Proverbs 3:5-6 \n\n` +
     `#TglccFamily #HappyBirthday #GodBless`,
 
@@ -156,8 +156,8 @@ const GREETING_TEMPLATES = [
   (namesLine) =>
     `Greetings from #TglccFamily!\n\n` +
     `Happy Birthday, ${namesLine}!❤️\n\n` +
-    `Today, the TGLCC family rejoices with you and gives thanks to God for the gift of your life. ` +
-    `May His joy be your strength and may gratitude fill every moment of this new chapter.🙏\n\n` +
+    `As you begin another year, may you continue to see God's hand working in your life. May He strengthen you when things get difficult, ` +
+    `guide you when you need direction, and bless you with many beautiful moments along the way.🙏\n\n` +
     `"This is the day the Lord has made; let us rejoice and be glad in it." — Psalm 118:24 \n\n` +
     `#TglccFamily #HappyBirthday #GodBless`,
 
@@ -165,8 +165,8 @@ const GREETING_TEMPLATES = [
   (namesLine) =>
     `Greetings from #TglccFamily!\n\n` +
     `Happy Birthday, ${namesLine}!❤️\n\n` +
-    `The TGLCC family is grateful to walk this journey of faith alongside you. May you feel God's love ` +
-    `and the warmth of your church family surrounding you today and always.🙏\n\n` +
+    `We’re thankful to God for another year of your life! May this new chapter be filled with meaningful moments, answered prayers, ` +
+    `and countless blessings. Keep walking with God and enjoy every moment He has prepared for you.🙏\n\n` +
     `"Above all, love each other deeply, because love covers over a multitude of sins." — 1 Peter 4:8 \n\n` +
     `#TglccFamily #HappyBirthday #GodBless`,
 ];
