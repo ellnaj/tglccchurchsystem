@@ -1,17 +1,11 @@
 {
   "name": "tglcc-birthday-automation",
   "version": "1.0.0",
-  "private": true,
-  "description": "Daily Facebook birthday greeting job for TGLCC members (Supabase + Facebook Graph API).",
-  "type": "module",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.2",
+    "canvas": "^3.2.3"
+  },
   "engines": {
     "node": ">=20"
-  },
-  "scripts": {
-    "post-birthdays": "node post-birthday-greetings.mjs"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.x",
-    "canvas": "^2.x"
   }
 }
