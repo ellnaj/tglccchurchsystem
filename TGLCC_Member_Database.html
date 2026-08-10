@@ -188,6 +188,7 @@
 
   .celeb-controls{
     display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;
+    margin-bottom:14px;
   }
   .celeb-pp-label{font-size:12.5px;color:var(--ink-soft);font-family:var(--font-mono);}
   .celeb-pp-select, #celebPerPageCustom{
@@ -1463,25 +1464,25 @@
       <button class="subtab-btn" data-sub="months" onclick="setBdaySub('months')">By month</button>
     </div>
     <div id="sub-celebrants">
+      <div class="celeb-controls no-print">
+        <label class="celeb-pp-label" for="celebPerPage">Celebrant per page</label>
+        <select class="celeb-pp-select" id="celebPerPage" onchange="onCelebPerPageChange()">
+          <option value="4">4</option>
+          <option value="6">6</option>
+          <option value="8" selected>8</option>
+          <option value="10">10</option>
+          <option value="12">12</option>
+          <option value="custom">Custom</option>
+        </select>
+        <input type="number" id="celebPerPageCustom" min="1" max="40" value="9" style="display:none;" onchange="renderCelebrants()">
+        <button type="button" class="btn btn-primary btn-sm" onclick="printCelebrants()">🖨 Print / Save as PDF</button>
+        <button type="button" class="btn btn-primary btn-sm" id="downloadCelebrantsBtn" onclick="downloadCelebrantsJPG()">⬇ Download as JPG (4K)</button>
+      </div>
       <div class="celebrants-panel" id="celebrantsPanel">
         <div class="celebrants-header">
           <div class="celebrants-heading">
             <h2 class="celebrants-title">Happy Birthday to<br>all <span id="celebrantsMonth"></span> Celebrants</h2>
             <div class="celebrants-sub" id="celebrantsCount"></div>
-          </div>
-          <div class="celeb-controls no-print">
-            <label class="celeb-pp-label" for="celebPerPage">Cards per page</label>
-            <select class="celeb-pp-select" id="celebPerPage" onchange="onCelebPerPageChange()">
-              <option value="4">4</option>
-              <option value="6">6</option>
-              <option value="8" selected>8</option>
-              <option value="10">10</option>
-              <option value="12">12</option>
-              <option value="custom">Custom</option>
-            </select>
-            <input type="number" id="celebPerPageCustom" min="1" max="40" value="9" style="display:none;" onchange="renderCelebrants()">
-            <button type="button" class="btn btn-primary btn-sm" onclick="printCelebrants()">🖨 Print / Save as PDF</button>
-            <button type="button" class="btn btn-primary btn-sm" id="downloadCelebrantsBtn" onclick="downloadCelebrantsJPG()">⬇ Download as JPG (4K)</button>
           </div>
         </div>
         <div class="celebrants-grid" id="celebrantsGrid"></div>
