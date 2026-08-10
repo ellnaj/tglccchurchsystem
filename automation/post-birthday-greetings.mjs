@@ -127,48 +127,48 @@ function joinNames(names) {
 const GREETING_TEMPLATES = [
   // 1. Blessings & Grace
   (namesLine) =>
-    `🎉🎂 HAPPY BIRTHDAY! 🎂🎉\n\n` +
-    `Happy birthday, ${namesLine}!\n\n` +
+    `Greetings from #TglccFamily!\n\n` +
+    `Happy Birthday, ${namesLine}!\n\n` +
     `On this special day, the TGLCC family prays that God's grace overflows in your life. ` +
     `May He bless you richly with good health, favor, and countless reasons to smile in the year ahead.\n\n` +
     `"The Lord bless you and keep you." — Numbers 6:24 🙏❤️\n\n` +
-    `#TGLCCFamily #HappyBirthday #GodBless`,
+    `#TglccFamily #HappyBirthday #GodBless`,
 
   // 2. Faith & Strength
   (namesLine) =>
-    `🎉🎂 HAPPY BIRTHDAY! 🎂🎉\n\n` +
-    `Happy birthday, ${namesLine}!\n\n` +
+    `Greetings from #TglccFamily!\n\n` +
+    `Happy Birthday, ${namesLine}!\n\n` +
     `Today, the TGLCC family celebrates the faith and strength God continues to build in you. ` +
     `May this new year find you rooted in Him, courageous in every season, and confident in His promises.\n\n` +
     `"I can do all things through Christ who strengthens me." — Philippians 4:13 💪🙏\n\n` +
-    `#TGLCCFamily #HappyBirthday #GodBless`,
+    `#TglccFamily #HappyBirthday #GodBless`,
 
   // 3. Prayer & Guidance
   (namesLine) =>
-    `🎉🎂 HAPPY BIRTHDAY! 🎂🎉\n\n` +
-    `Happy birthday, ${namesLine}!\n\n` +
+    `Greetings from #TglccFamily!\n\n` +
+    `Happy Birthday, ${namesLine}!\n\n` +
     `The TGLCC family lifts you up in prayer today, asking the Lord to guide every step you take this new year ` +
     `and to light your path with His wisdom and peace.\n\n` +
     `"Trust in the Lord with all your heart, and He will make your paths straight." — Proverbs 3:5-6 🙏✨\n\n` +
-    `#TGLCCFamily #HappyBirthday #GodBless`,
+    `#TglccFamily #HappyBirthday #GodBless`,
 
   // 4. Joy & Gratitude
   (namesLine) =>
-    `🎉🎂 HAPPY BIRTHDAY! 🎂🎉\n\n` +
-    `Happy birthday, ${namesLine}!\n\n` +
+    `Greetings from #TglccFamily!\n\n` +
+    `Happy Birthday, ${namesLine}!\n\n` +
     `Today, the TGLCC family rejoices with you and gives thanks to God for the gift of your life. ` +
     `May His joy be your strength and may gratitude fill every moment of this new chapter.\n\n` +
     `"This is the day the Lord has made; let us rejoice and be glad in it." — Psalm 118:24 🎈❤️\n\n` +
-    `#TGLCCFamily #HappyBirthday #GodBless`,
+    `#TglccFamily #HappyBirthday #GodBless`,
 
   // 5. Love & Fellowship
   (namesLine) =>
-    `🎉🎂 HAPPY BIRTHDAY! 🎂🎉\n\n` +
-    `Happy birthday, ${namesLine}!\n\n` +
+    `Greetings from #TglccFamily!\n\n` +
+    `Happy Birthday, ${namesLine}!\n\n` +
     `The TGLCC family is grateful to walk this journey of faith alongside you. May you feel God's love ` +
     `and the warmth of your church family surrounding you today and always.\n\n` +
     `"Above all, love each other deeply, because love covers over a multitude of sins." — 1 Peter 4:8 🙏❤️\n\n` +
-    `#TGLCCFamily #HappyBirthday #GodBless`,
+    `#TglccFamily #HappyBirthday #GodBless`,
 ];
 
 // Deterministic template pick: seeded from the celebrants' names (sorted, so
