@@ -26,6 +26,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto'; // built-in — no new dependency
+import { createCanvas, loadImage } from 'canvas'; // renders the branded birthday graphic
 
 const {
   SUPABASE_URL,
@@ -188,6 +189,210 @@ function buildMessage(celebrants) {
 }
 
 // ---------------------------------------------------------------------------
+// 3b. Branded graphic — renders the selected message onto one TGLCC
+//     blue/white/gold card (portrait) instead of posting the celebrant's raw
+//     photo. Built from the SAME `message` string produced above, so the 5
+//     templates / random-pick logic are untouched — this only changes how
+//     that text is presented visually. Never written to disk; returns a PNG
+//     Buffer that gets uploaded straight to Facebook.
+// ---------------------------------------------------------------------------
+const CARD_W = 1080;
+const CARD_MAX_H = 2000; // generous working canvas; final image is cropped to actual content height
+const NAVY = '#0B2A5B';
+const PILL_NAVY = '#12407A';
+const GOLD = '#C9A24B';
+const PAPER = '#FAF6EC';
+const TEXT_DARK = '#1E2A44';
+
+function stripEmoji(str) {
+  return str.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}]/gu, '').trim();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function wrapText(ctx, text, maxWidth) {
+  const words = text.split(' ');
+  const lines = [];
+  let line = '';
+  for (const word of words) {
+    const test = line ? `${line} ${word}` : word;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function drawWrappedCentered(ctx, text, maxWidth, startY, lineHeight) {
+  const lines = wrapText(ctx, text, maxWidth);
+  let y = startY;
+  lines.forEach((line) => {
+    ctx.fillText(line, CARD_W / 2, y);
+    y += lineHeight;
+  });
+  return y;
+}
+
+async function loadCelebrantImage(photo) {
+  if (!photo) return null;
+  try {
+    return await loadImage(photo); // node-canvas accepts data URIs and http(s) URLs directly
+  } catch (err) {
+    console.warn(`Could not load photo for card graphic: ${err.message}`);
+    return null;
+  }
+}
+
+// Builds the branded card as a PNG buffer from the celebrant list + the
+// already-built `message` string (same one used as the FB post caption).
+async function generateBirthdayCard(celebrants, message) {
+  const [, greetingBlock, bodyBlock, quoteBlock, hashtagBlock] = message.split('\n\n');
+
+  // Draw onto a generously tall working canvas first; we don't know the
+  // final content height (name/message length varies) until after the
+  // quote box is laid out, so the card is cropped to size at the end.
+  const canvas = createCanvas(CARD_W, CARD_MAX_H);
+  const ctx = canvas.getContext('2d');
+  ctx.textAlign = 'center';
+
+  // Background
+  ctx.fillStyle = PAPER;
+  ctx.fillRect(0, 0, CARD_W, CARD_MAX_H);
+
+  // Heading
+  ctx.fillStyle = NAVY;
+  ctx.font = 'bold 62px sans-serif';
+  ctx.fillText('HAPPY BIRTHDAY!', CARD_W / 2, 130);
+
+  // Gold divider with center dot
+  ctx.strokeStyle = GOLD;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(150, 165);
+  ctx.lineTo(CARD_W / 2 - 20, 165);
+  ctx.moveTo(CARD_W / 2 + 20, 165);
+  ctx.lineTo(CARD_W - 150, 165);
+  ctx.stroke();
+  ctx.fillStyle = GOLD;
+  ctx.beginPath();
+  ctx.arc(CARD_W / 2, 165, 6, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Celebrant photo(s), circular
+  const photos = (await Promise.all(celebrants.map((c) => loadCelebrantImage(c.photo)))).filter(Boolean);
+  const photoY = 300;
+  const photoR = 110;
+  if (photos.length > 0) {
+    const spacing = photoR * 2 + 30;
+    const startX = CARD_W / 2 - ((photos.length - 1) * spacing) / 2;
+    photos.forEach((img, i) => {
+      const cx = startX + i * spacing;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, photoY, photoR, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+      const scale = Math.max((photoR * 2) / img.width, (photoR * 2) / img.height);
+      const w = img.width * scale;
+      const h = img.height * scale;
+      ctx.drawImage(img, cx - w / 2, photoY - h / 2, w, h);
+      ctx.restore();
+      ctx.strokeStyle = NAVY;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(cx, photoY, photoR, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+  }
+
+  // "Happy birthday, {name(s)}!"
+  ctx.fillStyle = NAVY;
+  ctx.font = 'bold 44px sans-serif';
+  const greetingY = photos.length > 0 ? photoY + photoR + 80 : 300;
+  let y = drawWrappedCentered(ctx, greetingBlock, CARD_W - 160, greetingY, 52);
+
+  // Body paragraph
+  ctx.fillStyle = TEXT_DARK;
+  ctx.font = '29px sans-serif';
+  y = drawWrappedCentered(ctx, bodyBlock, CARD_W - 200, y + 40, 40);
+
+  // Quote box (verse text + reference)
+  const cleanQuote = stripEmoji(quoteBlock);
+  const quoteMatch = /^"(.+)"\s*—\s*(.+)$/.exec(cleanQuote);
+  const quoteText = quoteMatch ? quoteMatch[1] : cleanQuote;
+  const quoteRef = quoteMatch ? quoteMatch[2] : '';
+  const boxTop = y + 20;
+  const boxH = 150;
+  ctx.strokeStyle = '#C9D6E8';
+  ctx.lineWidth = 2;
+  roundRect(ctx, 100, boxTop, CARD_W - 200, boxH, 16);
+  ctx.stroke();
+  ctx.fillStyle = NAVY;
+  ctx.font = 'italic bold 28px sans-serif';
+  drawWrappedCentered(ctx, `"${quoteText}"`, CARD_W - 260, boxTop + 55, 34);
+  ctx.font = 'bold 22px sans-serif';
+  ctx.fillStyle = GOLD;
+  ctx.fillText(`— ${quoteRef}`, CARD_W / 2, boxTop + boxH - 30);
+
+  // Footer — gold hairline, shallow navy curve, hashtag pills sitting
+  // inside the band (no emblem/wordmark).
+  const footerTop = boxTop + boxH + 45;
+  const pillH = 50;
+  const footerPillY = footerTop + 62;
+  const footerBottom = footerPillY + pillH + 45;
+
+  ctx.fillStyle = GOLD;
+  ctx.fillRect(0, footerTop - 6, CARD_W, 6);
+  ctx.fillStyle = NAVY;
+  ctx.beginPath();
+  ctx.moveTo(0, footerTop + 30);
+  ctx.quadraticCurveTo(CARD_W / 2, footerTop - 30, CARD_W, footerTop + 30);
+  ctx.lineTo(CARD_W, footerBottom);
+  ctx.lineTo(0, footerBottom);
+  ctx.closePath();
+  ctx.fill();
+
+  // Hashtag pills, centered inside the footer band
+  const tags = (hashtagBlock || '').split(' ').filter(Boolean);
+  ctx.font = 'bold 22px sans-serif';
+  const pillPadding = 20;
+  const pillGap = 16;
+  const widths = tags.map((t) => ctx.measureText(t).width + pillPadding * 2);
+  const totalW = widths.reduce((a, b) => a + b, 0) + pillGap * (tags.length - 1);
+  let px = CARD_W / 2 - totalW / 2;
+  tags.forEach((tag, i) => {
+    ctx.fillStyle = PILL_NAVY;
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, px, footerPillY, widths[i], pillH, pillH / 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText(tag, px + widths[i] / 2, footerPillY + pillH / 2 + 7);
+    px += widths[i] + pillGap;
+  });
+
+  // Crop the working canvas down to the actual content height.
+  const finalCanvas = createCanvas(CARD_W, footerBottom);
+  const finalCtx = finalCanvas.getContext('2d');
+  finalCtx.drawImage(canvas, 0, 0, CARD_W, footerBottom, 0, 0, CARD_W, footerBottom);
+
+  return finalCanvas.toBuffer('image/png');
+}
+
+// ---------------------------------------------------------------------------
 // 4. Photo handling — decode base64 data URIs in memory, or pass plain URLs
 //    straight through. Never written to disk.
 // ---------------------------------------------------------------------------
@@ -230,6 +435,31 @@ async function uploadUnpublishedPhoto(name, photo) {
     return json.id;
   } catch (err) {
     console.warn(`Photo upload threw for ${name}: ${err.message}`);
+    return null;
+  }
+}
+
+// Uploads an already-rendered image buffer (the branded card) as an
+// *unpublished* Page photo, same pattern as uploadUnpublishedPhoto above.
+// Returns the media_fbid on success, or null on failure (logged, not thrown).
+async function uploadPhotoBuffer(buffer) {
+  try {
+    const form = new FormData();
+    form.append('published', 'false');
+    form.append('access_token', FB_PAGE_ACCESS_TOKEN);
+    form.append('source', new Blob([buffer], { type: 'image/png' }), 'birthday-card.png');
+
+    const res = await fetch(`${GRAPH_BASE}/${FB_PAGE_ID}/photos`, { method: 'POST', body: form });
+    const json = await res.json();
+
+    if (!res.ok || json.error || !json.id) {
+      console.warn(`Card graphic upload failed: ${JSON.stringify(json.error || json)}`);
+      return null;
+    }
+
+    return json.id;
+  } catch (err) {
+    console.warn(`Card graphic upload threw: ${err.message}`);
     return null;
   }
 }
@@ -324,12 +554,23 @@ async function main() {
     return;
   }
 
-  // Upload each celebrant's photo (if any) as unpublished first, so we can
-  // attach whichever ones succeed to a single combined post.
+  // Prefer posting the branded TGLCC card graphic. If rendering it fails for
+  // any reason, fall back to the original behavior (each celebrant's raw
+  // photo attached individually) so a post still goes out.
   const mediaFbids = [];
-  for (const celebrant of celebrants) {
-    const id = await uploadUnpublishedPhoto(celebrant.name, celebrant.photo);
-    if (id) mediaFbids.push(id);
+  try {
+    const cardBuffer = await generateBirthdayCard(celebrants, message);
+    const cardId = await uploadPhotoBuffer(cardBuffer);
+    if (cardId) mediaFbids.push(cardId);
+  } catch (err) {
+    console.warn(`Card graphic generation failed, falling back to raw photos: ${err.message}`);
+  }
+
+  if (mediaFbids.length === 0) {
+    for (const celebrant of celebrants) {
+      const id = await uploadUnpublishedPhoto(celebrant.name, celebrant.photo);
+      if (id) mediaFbids.push(id);
+    }
   }
 
   const result = await postToFacebook(message, mediaFbids);
