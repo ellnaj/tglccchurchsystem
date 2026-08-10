@@ -163,54 +163,90 @@
   .photo-preview-wrap .ph-fallback{color:var(--green-dark);font-family:var(--font-mono);font-size:11px;}
   .empty-state h3{font-family:var(--font-display);font-weight:500;color:var(--ink);margin-bottom:6px;}
 
-  /* birthday celebrants this month */
+  /* birthday celebrants this month — landscape, print-friendly, density-adjustable */
   .celebrants-panel{
-    background:linear-gradient(160deg,var(--green-tint) 0%,#ffffff 45%,var(--gold-tint) 100%);
+    --celeb-gold:#af8a2e;
+    --celeb-navy:#33417a;
+    --celeb-brown:#4a3524;
+    --celeb-brown-soft:#6b5842;
+    position:relative;overflow:hidden;
+    background:linear-gradient(120deg,#cfe2f5 0%,#f7ecd8 55%,#fbe0c2 100%);
     border:1px solid var(--line);border-radius:22px;
-    padding:28px 28px 32px;box-shadow:0 10px 34px rgba(38,47,112,0.10);
+    padding:16px 20px 14px;box-shadow:0 10px 34px rgba(38,47,112,0.10);
   }
   .celebrants-header{
-    display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;
-    margin-bottom:24px;
+    position:relative;z-index:1;
+    display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;
+    margin-bottom:10px;
   }
   .celebrants-title{
-    font-family:var(--font-display);font-weight:700;font-size:26px;color:var(--ink);margin:0;
-    letter-spacing:-0.01em;
+    font-family:var(--font-display);font-weight:700;font-size:24px;color:var(--celeb-gold);margin:0;
+    letter-spacing:0.01em;text-transform:uppercase;line-height:1.2;
+    text-shadow:0 1px 0 rgba(255,255,255,0.4);
   }
-  .celebrants-sub{font-size:12.5px;color:var(--ink-soft);margin-top:4px;}
+  .celebrants-sub{font-size:12.5px;color:var(--celeb-brown-soft);margin-top:0;}
+
+  .celeb-controls{
+    display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;
+  }
+  .celeb-pp-label{font-size:12.5px;color:var(--ink-soft);font-family:var(--font-mono);}
+  .celeb-pp-select, #celebPerPageCustom{
+    font:inherit;font-size:13px;padding:7px 10px;border-radius:8px;
+    border:1px solid var(--line-strong);background:#fff;color:var(--ink);
+  }
+  #celebPerPageCustom{width:72px;}
+
+  /* stacked, print-ready sheets — one .celeb-print-page per printed landscape page */
   .celebrants-grid{
-    display:grid;grid-template-columns:repeat(3, 228px);gap:22px;justify-content:center;
+    position:relative;z-index:1;
+    display:flex;flex-direction:column;align-items:center;gap:10px;
+  }
+  .celeb-print-page{
+    width:100%;max-width:1000px;
+    background:transparent;border:none;border-radius:14px;
+    box-shadow:none;
+    padding:0 8px;box-sizing:border-box;
+    display:flex;flex-direction:column;
+  }
+  .celeb-page-label{
+    font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;
+    color:var(--celeb-brown-soft);margin-bottom:4px;flex-shrink:0;text-align:left;opacity:0.7;
+  }
+  .celeb-page-grid{
+    display:flex;flex-wrap:wrap;
+    justify-content:center;align-content:flex-start;
   }
   .celeb-card{
-    width:228px;height:280px;
-    background:#fff;border-radius:16px;padding:20px 16px 18px;text-align:center;
-    border:1px solid var(--line);box-shadow:0 6px 18px rgba(38,47,112,0.08);
-    transition:transform 0.15s ease,box-shadow 0.15s ease;
-    display:flex;flex-direction:column;align-items:center;overflow:hidden;
+    box-sizing:border-box;
+    background:transparent;padding:var(--cc-pad,10px) 6px;text-align:center;
+    border:none;
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-start;overflow:hidden;
   }
-  .celeb-card:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(38,47,112,0.14);}
   .celeb-photo{
-    width:88px;height:88px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 12px;flex-shrink:0;
-    border:3px solid var(--green-tint);box-shadow:0 3px 10px rgba(38,47,112,0.15);
+    width:var(--cc-photo,72px);height:var(--cc-photo,72px);border-radius:50%;object-fit:cover;display:block;
+    margin:0 auto 10px;flex-shrink:0;
+    border:3px solid var(--celeb-gold);box-shadow:0 3px 10px rgba(38,47,112,0.18);
   }
   .celeb-photo-fallback{
-    width:88px;height:88px;border-radius:50%;margin:0 auto 12px;background:var(--green-tint);flex-shrink:0;
-    color:var(--green-dark);display:flex;align-items:center;justify-content:center;
-    font-size:26px;font-weight:700;font-family:var(--font-display);
-    border:3px solid #fff;box-shadow:0 3px 10px rgba(38,47,112,0.15);
+    width:var(--cc-photo,72px);height:var(--cc-photo,72px);border-radius:50%;
+    margin:0 auto 10px;background:#efe2b8;flex-shrink:0;
+    color:var(--celeb-brown);display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-family:var(--font-display);font-size:calc(var(--cc-photo, 72px) * 0.32);
+    border:3px solid var(--celeb-gold);box-shadow:0 3px 10px rgba(38,47,112,0.18);
   }
   .celeb-name{
-    font-family:var(--font-display);font-weight:700;font-size:16.5px;color:var(--ink);margin-bottom:5px;line-height:1.25;
+    font-family:var(--font-display);font-weight:700;font-size:var(--cc-name,15px);color:var(--celeb-brown);
+    margin-bottom:4px;line-height:1.22;
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
-    min-height:calc(1.25em * 2);width:100%;flex-shrink:0;
+    width:100%;flex-shrink:0;
   }
   .celeb-date{
-    font-family:var(--font-mono);font-size:12.5px;font-weight:700;color:#fff;background:var(--green);
-    display:inline-block;padding:3px 11px;border-radius:20px;margin-bottom:7px;letter-spacing:0.02em;flex-shrink:0;
+    font-family:var(--font-mono);font-size:var(--cc-date,11.5px);font-weight:700;color:#fff;background:var(--celeb-navy);
+    display:inline-block;padding:2px 10px;border-radius:20px;margin-bottom:4px;letter-spacing:0.02em;flex-shrink:0;
   }
-  .celeb-age{font-size:12.5px;color:var(--ink-soft);margin-bottom:2px;flex-shrink:0;}
+  .celeb-age{font-size:var(--cc-age,11px);color:var(--celeb-brown-soft);margin-bottom:2px;flex-shrink:0;}
   .celeb-ministry{
-    font-size:11.5px;color:var(--ink-faint);font-style:italic;margin-top:2px;
+    font-size:var(--cc-ministry,10px);color:var(--celeb-brown-soft);font-style:italic;margin-top:1px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;flex-shrink:0;
   }
   .celebrants-empty{
@@ -219,8 +255,37 @@
   .celebrants-empty .ce-icon{font-size:34px;margin-bottom:10px;display:block;}
 
   @media(max-width:560px){
-    .celebrants-panel{padding:20px 18px 24px;border-radius:16px;}
-    .celebrants-title{font-size:21px;}
+    .celebrants-panel{padding:12px 14px 10px;border-radius:16px;}
+    .celebrants-title{font-size:18px;}
+    .celeb-print-page{aspect-ratio:auto;}
+  }
+
+  /* print mode: landscape, celebrants sheets only — no nav, tabs, or controls */
+  body.printing-celebrants .masthead,
+  body.printing-celebrants .data-banner,
+  body.printing-celebrants #reminderBanner,
+  body.printing-celebrants #todayBirthdayBanner,
+  body.printing-celebrants .tabs,
+  body.printing-celebrants #birthdaySubtabs,
+  body.printing-celebrants .celebrants-header,
+  body.printing-celebrants .no-print,
+  body.printing-celebrants .app-footer{
+    display:none !important;
+  }
+  body.printing-celebrants .app{padding:0;max-width:none;}
+  body.printing-celebrants .celebrants-panel{
+    box-shadow:none;border:none;border-radius:0;background:#fff;padding:0;
+  }
+  body.printing-celebrants .celebrants-grid{gap:0;}
+  body.printing-celebrants .celeb-print-page{
+    max-width:none;width:100%;aspect-ratio:auto;height:100vh;
+    box-shadow:none;border:none;border-radius:0;page-break-after:always;break-after:page;
+    display:flex;flex-direction:column;justify-content:center;
+  }
+  body.printing-celebrants .celeb-page-grid{align-content:center;}
+  body.printing-celebrants .celeb-print-page:last-child{page-break-after:auto;break-after:auto;}
+  @media print{
+    .celeb-card, .celeb-date{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   }
 
   /* birthdays view */
@@ -503,6 +568,7 @@
     border-radius:var(--radius);padding:12px 16px;margin-bottom:18px;
   }
   .reminder-banner .rb-icon{font-family:var(--font-mono);font-size:18px;color:var(--gold);line-height:1;margin-top:1px;}
+  .reminder-banner .rb-icon-img{width:20px;height:20px;display:block;margin-top:1px;flex:none;}
   .reminder-banner .rb-title{font-weight:700;font-size:13.5px;color:var(--ink);margin-bottom:2px;}
 
   .data-banner{
@@ -745,8 +811,7 @@
   @media (max-width:900px){
     .app{padding:20px 18px 64px;}
     .masthead h1{font-size:23px;}
-    .celebrants-grid{grid-template-columns:repeat(3, 190px);gap:16px;}
-    .celeb-card{width:190px;height:264px;}
+    .celeb-print-page{aspect-ratio:auto;min-height:420px;}
     .month-grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));}
     .bday-grid{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));}
   }
@@ -789,8 +854,8 @@
     .baptism-list-row, .wl-list-row{font-size:12.5px;}
 
     /* grids collapse a step earlier */
-    .celebrants-grid{grid-template-columns:repeat(3, 160px);gap:12px;}
-    .celeb-card{width:160px;height:250px;padding:16px 12px 14px;}
+    .celeb-print-page{padding:14px;}
+    .celeb-page-grid{gap:8px !important;}
     .bday-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));}
     .month-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));}
     .org-groups, .org-row{gap:10px;}
@@ -839,9 +904,9 @@
 
     .role-picker-field-compact{flex-direction:column;align-items:stretch;}
 
-    .celebrants-grid{grid-template-columns:repeat(2, 150px);gap:12px;}
-    .celeb-card{width:150px;height:246px;padding:16px 12px 14px;}
-    .celeb-photo,.celeb-photo-fallback{width:68px;height:68px;}
+    .celeb-print-page{padding:12px;}
+    .celeb-page-grid{gap:6px !important;}
+    .celeb-controls{gap:8px;}
     .bday-grid{grid-template-columns:1fr;}
     .month-grid{grid-template-columns:1fr;}
     .org-row, .org-groups{flex-direction:column;align-items:stretch;}
@@ -862,8 +927,7 @@
   @media (max-width:380px){
     .masthead h1{font-size:15.5px;}
     .toolbar .btn, .toolbar select.filter{flex:1 1 100%;}
-    .celebrants-grid{grid-template-columns:repeat(1, 220px);}
-    .celeb-card{width:220px;height:280px;}
+    .celeb-page-label{font-size:9px;}
   }
 
   /* touch devices: remove hover-only affordances that can stick after tap */
@@ -1074,6 +1138,7 @@
     </div>
   </div>
 
+  <div id="todayBirthdayBanner"></div>
   <div id="reminderBanner"></div>
 
   <div class="tabs">
@@ -1401,10 +1466,23 @@
       <div class="celebrants-panel" id="celebrantsPanel">
         <div class="celebrants-header">
           <div class="celebrants-heading">
-            <h2 class="celebrants-title">Happy Birthday to all <span id="celebrantsMonth"></span> Celebrants</h2>
+            <h2 class="celebrants-title">Happy Birthday to<br>all <span id="celebrantsMonth"></span> Celebrants</h2>
             <div class="celebrants-sub" id="celebrantsCount"></div>
           </div>
-          <button type="button" class="btn btn-primary btn-sm" id="downloadCelebrantsBtn" onclick="downloadCelebrantsJPG()">⬇ Download as JPG (4K)</button>
+          <div class="celeb-controls no-print">
+            <label class="celeb-pp-label" for="celebPerPage">Cards per page</label>
+            <select class="celeb-pp-select" id="celebPerPage" onchange="onCelebPerPageChange()">
+              <option value="4">4</option>
+              <option value="6">6</option>
+              <option value="8" selected>8</option>
+              <option value="10">10</option>
+              <option value="12">12</option>
+              <option value="custom">Custom</option>
+            </select>
+            <input type="number" id="celebPerPageCustom" min="1" max="40" value="9" style="display:none;" onchange="renderCelebrants()">
+            <button type="button" class="btn btn-primary btn-sm" onclick="printCelebrants()">🖨 Print / Save as PDF</button>
+            <button type="button" class="btn btn-primary btn-sm" id="downloadCelebrantsBtn" onclick="downloadCelebrantsJPG()">⬇ Download as JPG (4K)</button>
+          </div>
         </div>
         <div class="celebrants-grid" id="celebrantsGrid"></div>
       </div>
@@ -3086,6 +3164,7 @@ function renderAll(){
   renderCelebrants();
   renderMonths();
   renderTrainings();
+  renderCelebTodayBanner();
   renderReminderBanner();
   $('rosterCount').textContent = activeMembers().length;
   $('inactiveCount').textContent = inactiveMembers().length;
@@ -3383,6 +3462,70 @@ function ageTurningThisYear(birthday){
   return new Date().getFullYear() - b.getFullYear();
 }
 
+// ---- landscape print layout: cards-per-page -> grid shape + card sizing ----
+const CELEB_LAYOUTS = {
+  4:  {cols:2, rows:2},
+  6:  {cols:3, rows:2},
+  8:  {cols:4, rows:2},
+  10: {cols:5, rows:2},
+  12: {cols:4, rows:3}
+};
+
+function celebLayoutFor(n){
+  if(CELEB_LAYOUTS[n]) return CELEB_LAYOUTS[n];
+  // generic landscape-friendly grid (~11x8.5in ratio) for custom counts
+  const cols = Math.max(1, Math.ceil(Math.sqrt(n * 1.294)));
+  const rows = Math.max(1, Math.ceil(n / cols));
+  return {cols, rows};
+}
+
+function celebSizingFor(n){
+  // interpolate card/photo/text sizes between the 4-per-page (largest) and 12-per-page (smallest) presets
+  const t = Math.max(0, Math.min(1, (n - 4) / (12 - 4)));
+  const lerp = (a,b)=> a + (b - a) * t;
+  return {
+    photo: Math.round(lerp(84, 44)),
+    name: lerp(16, 10).toFixed(1),
+    date: lerp(12, 9).toFixed(1),
+    age: lerp(11.5, 8.5).toFixed(1),
+    ministry: lerp(10.5, 7.5).toFixed(1),
+    pad: Math.round(lerp(16, 7)),
+    gap: Math.round(lerp(14, 6))
+  };
+}
+
+function getCelebPerPage(){
+  const sel = $('celebPerPage');
+  if(!sel) return 8;
+  if(sel.value === 'custom'){
+    const v = parseInt($('celebPerPageCustom').value, 10);
+    return (v && v > 0) ? Math.min(v, 40) : 8;
+  }
+  return parseInt(sel.value, 10) || 8;
+}
+
+function onCelebPerPageChange(){
+  const isCustom = $('celebPerPage').value === 'custom';
+  $('celebPerPageCustom').style.display = isCustom ? '' : 'none';
+  renderCelebrants();
+}
+
+function printCelebrants(){
+  const styleTag = document.createElement('style');
+  styleTag.id = 'celebPrintPageSetup';
+  styleTag.textContent = '@page{ size: landscape; margin: 10mm; }';
+  document.head.appendChild(styleTag);
+  document.body.classList.add('printing-celebrants');
+  const cleanup = ()=>{
+    document.body.classList.remove('printing-celebrants');
+    const s = document.getElementById('celebPrintPageSetup');
+    if(s) s.remove();
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  setTimeout(()=>{ window.print(); }, 60);
+}
+
 function renderCelebrants(){
   if(!$('celebrantsGrid')) return;
   const now = new Date();
@@ -3405,18 +3548,63 @@ function renderCelebrants(){
     return;
   }
 
-  grid.innerHTML = list.map(m=>{
-    const dateLabel = fmtDate(m.birthday).replace(/, \d{4}/, '');
-    const turning = ageTurningThisYear(m.birthday);
+  const perPage = getCelebPerPage();
+  const {cols, rows} = celebLayoutFor(perPage);
+  const s = celebSizingFor(perPage);
+  const monthYearLabel = ``;
+
+  const pages = [];
+  for(let i=0;i<list.length;i+=perPage){ pages.push(list.slice(i, i+perPage)); }
+
+  grid.innerHTML = pages.map((pageList, pIdx)=>{
+    const pageLabel = pages.length > 1 ? `${monthYearLabel} — Page ${pIdx+1} of ${pages.length}` : monthYearLabel;
+    // flex-basis width per card so each row holds "cols" cards; flexbox centers any incomplete last row automatically
+    const cardWidthPct = (100 / cols).toFixed(4);
+    const gridStyle = `gap:${s.gap}px;--cc-pad:${s.pad}px;--cc-photo:${s.photo}px;--cc-name:${s.name}px;`
+      + `--cc-date:${s.date}px;--cc-age:${s.age}px;--cc-ministry:${s.ministry}px;`;
+    const cardStyle = `flex:0 0 calc(${cardWidthPct}% - ${s.gap}px);max-width:calc(${cardWidthPct}% - ${s.gap}px);`;
     return `
-      <div class="celeb-card">
-        ${avatarHtml(m, 'celeb-photo', 'celeb-photo-fallback')}
-        <div class="celeb-name">${escapeHtml(m.name)}</div>
-        <div class="celeb-date">${dateLabel}</div>
-        ${turning !== null ? `<div class="celeb-age">Turning ${turning}</div>` : ''}
-        ${m.ministry ? `<div class="celeb-ministry">${escapeHtml(m.ministry)}</div>` : ''}
+      <div class="celeb-print-page">
+        <div class="celeb-page-label">${pageLabel}</div>
+        <div class="celeb-page-grid" style="${gridStyle}">
+          ${pageList.map(m=>{
+            const dateLabel = fmtDate(m.birthday).replace(/, \d{4}/, '');
+            return `
+              <div class="celeb-card" style="${cardStyle}">
+                ${avatarHtml(m, 'celeb-photo', 'celeb-photo-fallback')}
+                <div class="celeb-name">${escapeHtml(m.name)}</div>
+                <div class="celeb-date">${dateLabel}</div>
+              </div>`;
+          }).join('')}
+        </div>
       </div>`;
   }).join('');
+}
+
+function renderCelebTodayBanner(){
+  const el = $('todayBirthdayBanner');
+  if(!el) return;
+  const now = new Date();
+  const todays = members.filter(m=>{
+    if(!m.birthday || m.active === false) return false;
+    const b = new Date(m.birthday+'T00:00:00');
+    return b.getDate() === now.getDate() && b.getMonth() === now.getMonth();
+  });
+  if(!todays.length){ el.innerHTML = ''; return; }
+  const names = todays.map(m=>escapeHtml(m.name)).join(', ');
+  const titleText = `${todays.length} birthday${todays.length===1?'':'s'} today`;
+  el.innerHTML = `
+    <div class="reminder-banner">
+      <svg class="rb-icon-img" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M7 3.5C7 2.67 7.67 2 8.5 2S10 2.67 10 3.5C10 4.15 9.59 4.7 9 4.91V6H8V4.91C7.41 4.7 7 4.15 7 3.5Z" fill="var(--gold)"/>
+        <path d="M4 10C4 8.9 4.9 8 6 8H12C13.1 8 14 8.9 14 10V11C14 11 15 11 15 9.5C15 8.5 16 8 16 8C16 8 17 8.5 17 9.5C17 11 18 11 18 11V10C18 8.9 18.9 8 20 8V10C20 10 19 10 19 11.5C19 13 20 13 20 13V19C20 20.1 19.1 21 18 21H6C4.9 21 4 20.1 4 19V13C4 13 5 13 5 11.5C5 10 4 10 4 10Z" fill="var(--gold)"/>
+        <rect x="4" y="15" width="16" height="4" fill="#fff" fill-opacity="0.35"/>
+      </svg>
+      <div>
+        <div class="rb-title">${titleText}</div>
+        <div class="rb-names">${names}</div>
+      </div>
+    </div>`;
 }
 
 async function downloadCelebrantsJPG(){
