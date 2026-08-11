@@ -182,9 +182,9 @@ function pickTemplateIndex(celebrants) {
   return hash[0] % GREETING_TEMPLATES.length;
 }
 
-function buildMessage(celebrants) {
+function buildMessage(celebrants, templateIndex = pickTemplateIndex(celebrants)) {
   const namesLine = joinNames(celebrants.map((c) => c.name));
-  const template = GREETING_TEMPLATES[pickTemplateIndex(celebrants)];
+  const template = GREETING_TEMPLATES[templateIndex];
   return template(namesLine);
 }
 
@@ -198,11 +198,42 @@ function buildMessage(celebrants) {
 // ---------------------------------------------------------------------------
 const CARD_W = 1080;
 const CARD_MAX_H = 2000; // generous working canvas; final image is cropped to actual content height
-const NAVY = '#0B2A5B';
-const PILL_NAVY = '#12407A';
-const GOLD = '#C9A24B';
-const PAPER = '#FAF6EC';
 const TEXT_DARK = '#1E2A44';
+
+// ---------------------------------------------------------------------------
+// 5 card design themes — one per GREETING_TEMPLATES theme (same index, same
+// seed as pickTemplateIndex), so a given message theme always renders on its
+// matching card design. Each theme controls palette + a few structural
+// choices (photo frame, divider, footer, quote box) so the cards feel like
+// distinct Canva-style templates rather than one skin re-colored.
+// ---------------------------------------------------------------------------
+const CARD_THEMES = [
+  { // 1. Blessings & Grace — classic navy/gold
+    name: 'grace',
+    navy: '#0B2A5B', pillNavy: '#12407A', gold: '#C9A24B', paper: '#FAF6EC',
+    photoFrame: 'circle', divider: 'line', footer: 'curve', quoteBox: 'thin', decoration: 'none',
+  },
+  { // 2. Faith & Strength — deep maroon/gold, bolder lines
+    name: 'strength',
+    navy: '#5B1A2B', pillNavy: '#7A2338', gold: '#D8B15B', paper: '#FBF3EC',
+    photoFrame: 'square', divider: 'double', footer: 'angle', quoteBox: 'thick', decoration: 'corners',
+  },
+  { // 3. Prayer & Guidance — sage green/cream, softer shapes
+    name: 'guidance',
+    navy: '#2F4F3E', pillNavy: '#3E664F', gold: '#C7A75A', paper: '#F6F5EC',
+    photoFrame: 'dashed', divider: 'line', footer: 'wave', quoteBox: 'dotted', decoration: 'dots',
+  },
+  { // 4. Joy & Gratitude — sky blue/gold, playful accents
+    name: 'gratitude',
+    navy: '#1B4B66', pillNavy: '#256485', gold: '#E0B84A', paper: '#F5F8FA',
+    photoFrame: 'sparkle', divider: 'line', footer: 'curve', quoteBox: 'thin', decoration: 'confetti',
+  },
+  { // 5. Love & Fellowship — warm rose/gold, ring accents
+    name: 'fellowship',
+    navy: '#6B2E3A', pillNavy: '#8A3D4D', gold: '#D9A94E', paper: '#FBF1EC',
+    photoFrame: 'ring', divider: 'double', footer: 'diagonal', quoteBox: 'filled', decoration: 'hearts',
+  },
+];
 
 function stripEmoji(str) {
   return str.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}]/gu, '').trim();
@@ -255,9 +286,130 @@ async function loadCelebrantImage(photo) {
   }
 }
 
+// Small corner/scatter accents drawn under everything else, kept subtle so
+// text stays readable. Purely decorative — varies the "feel" of a theme
+// beyond just its color palette.
+function drawDecoration(ctx, theme) {
+  const { gold, navy, decoration } = theme;
+  ctx.save();
+  ctx.globalAlpha = 0.5;
+  if (decoration === 'corners') {
+    // Bold L-shaped corner brackets, top-left & top-right
+    ctx.strokeStyle = gold;
+    ctx.lineWidth = 4;
+    [[40, 40, 1], [CARD_W - 40, 40, -1]].forEach(([x, y, dir]) => {
+      ctx.beginPath();
+      ctx.moveTo(x, y + 50);
+      ctx.lineTo(x, y);
+      ctx.lineTo(x + dir * 50, y);
+      ctx.stroke();
+    });
+  } else if (decoration === 'dots') {
+    // Scattered small dots along the top edge, like petals falling
+    ctx.fillStyle = gold;
+    const dotSpots = [[70, 60, 5], [130, 100, 3], [CARD_W - 70, 60, 5], [CARD_W - 130, 100, 3], [CARD_W / 2 - 250, 50, 3], [CARD_W / 2 + 250, 50, 3]];
+    dotSpots.forEach(([x, y, r]) => {
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  } else if (decoration === 'confetti') {
+    // Tiny scattered squares/circles, playful
+    const spots = [[60, 50], [110, 90], [CARD_W - 60, 50], [CARD_W - 110, 90], [CARD_W / 2 - 200, 40], [CARD_W / 2 + 200, 40], [90, 140], [CARD_W - 90, 140]];
+    spots.forEach(([x, y], i) => {
+      ctx.fillStyle = i % 2 === 0 ? gold : navy;
+      if (i % 3 === 0) {
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.fillRect(x - 3, y - 3, 6, 6);
+      }
+    });
+  } else if (decoration === 'hearts') {
+    ctx.fillStyle = gold;
+    [[80, 70, 10], [CARD_W - 80, 70, 10], [130, 110, 6], [CARD_W - 130, 110, 6]].forEach(([cx, cy, s]) => {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + s * 0.3);
+      ctx.bezierCurveTo(cx - s, cy - s * 0.6, cx - s * 1.6, cy + s * 0.5, cx, cy + s * 1.4);
+      ctx.bezierCurveTo(cx + s * 1.6, cy + s * 0.5, cx + s, cy - s * 0.6, cx, cy + s * 0.3);
+      ctx.fill();
+    });
+  }
+  ctx.restore();
+}
+
+function drawPhotoFrame(ctx, img, cx, cy, r, theme) {
+  const { navy, gold, photoFrame } = theme;
+  const drawClippedCircle = () => {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+    const scale = Math.max((r * 2) / img.width, (r * 2) / img.height);
+    const w = img.width * scale;
+    const h = img.height * scale;
+    ctx.drawImage(img, cx - w / 2, cy - h / 2, w, h);
+    ctx.restore();
+  };
+
+  if (photoFrame === 'square') {
+    ctx.save();
+    roundRect(ctx, cx - r, cy - r, r * 2, r * 2, 24);
+    ctx.clip();
+    const scale = Math.max((r * 2) / img.width, (r * 2) / img.height);
+    const w = img.width * scale;
+    const h = img.height * scale;
+    ctx.drawImage(img, cx - w / 2, cy - h / 2, w, h);
+    ctx.restore();
+    ctx.strokeStyle = navy;
+    ctx.lineWidth = 6;
+    roundRect(ctx, cx - r, cy - r, r * 2, r * 2, 24);
+    ctx.stroke();
+  } else {
+    drawClippedCircle();
+    ctx.strokeStyle = navy;
+    ctx.lineWidth = photoFrame === 'ring' ? 5 : 5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+
+    if (photoFrame === 'dashed') {
+      ctx.strokeStyle = gold;
+      ctx.lineWidth = 3;
+      ctx.setLineDash([10, 8]);
+      ctx.beginPath();
+      ctx.arc(cx, cy, r + 12, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    } else if (photoFrame === 'ring') {
+      ctx.strokeStyle = gold;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r + 12, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (photoFrame === 'sparkle') {
+      ctx.fillStyle = gold;
+      for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI * 2 * i) / 6;
+        const sx = cx + Math.cos(angle) * (r + 20);
+        const sy = cy + Math.sin(angle) * (r + 20);
+        ctx.beginPath();
+        ctx.arc(sx, sy, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+}
+
 // Builds the branded card as a PNG buffer from the celebrant list + the
 // already-built `message` string (same one used as the FB post caption).
-async function generateBirthdayCard(celebrants, message) {
+// `themeIndex` should match the message's template index so the visual
+// theme (colors/shapes) always pairs with the message theme (words).
+async function generateBirthdayCard(celebrants, message, themeIndex = 0) {
+  const theme = CARD_THEMES[themeIndex % CARD_THEMES.length];
+  const { navy, pillNavy, gold, paper } = theme;
   const [, greetingBlock, bodyBlock, quoteBlock, hashtagBlock] = message.split('\n\n');
 
   // Draw onto a generously tall working canvas first; we don't know the
@@ -268,29 +420,35 @@ async function generateBirthdayCard(celebrants, message) {
   ctx.textAlign = 'center';
 
   // Background
-  ctx.fillStyle = PAPER;
+  ctx.fillStyle = paper;
   ctx.fillRect(0, 0, CARD_W, CARD_MAX_H);
 
+  drawDecoration(ctx, theme);
+
   // Heading
-  ctx.fillStyle = NAVY;
+  ctx.fillStyle = navy;
   ctx.font = 'bold 62px sans-serif';
   ctx.fillText('HAPPY BIRTHDAY!', CARD_W / 2, 130);
 
-  // Gold divider with center dot
-  ctx.strokeStyle = GOLD;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(150, 165);
-  ctx.lineTo(CARD_W / 2 - 20, 165);
-  ctx.moveTo(CARD_W / 2 + 20, 165);
-  ctx.lineTo(CARD_W - 150, 165);
-  ctx.stroke();
-  ctx.fillStyle = GOLD;
+  // Divider (single line+dot, or bolder double line depending on theme)
+  ctx.strokeStyle = gold;
+  ctx.lineWidth = theme.divider === 'double' ? 3 : 2;
+  const drawDividerHalf = (yOff) => {
+    ctx.beginPath();
+    ctx.moveTo(150, 165 + yOff);
+    ctx.lineTo(CARD_W / 2 - 20, 165 + yOff);
+    ctx.moveTo(CARD_W / 2 + 20, 165 + yOff);
+    ctx.lineTo(CARD_W - 150, 165 + yOff);
+    ctx.stroke();
+  };
+  drawDividerHalf(0);
+  if (theme.divider === 'double') drawDividerHalf(8);
+  ctx.fillStyle = gold;
   ctx.beginPath();
   ctx.arc(CARD_W / 2, 165, 6, 0, Math.PI * 2);
   ctx.fill();
 
-  // Celebrant photo(s), circular
+  // Celebrant photo(s) — frame shape depends on theme
   const photos = (await Promise.all(celebrants.map((c) => loadCelebrantImage(c.photo)))).filter(Boolean);
   const photoY = 300;
   const photoR = 110;
@@ -299,26 +457,12 @@ async function generateBirthdayCard(celebrants, message) {
     const startX = CARD_W / 2 - ((photos.length - 1) * spacing) / 2;
     photos.forEach((img, i) => {
       const cx = startX + i * spacing;
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(cx, photoY, photoR, 0, Math.PI * 2);
-      ctx.closePath();
-      ctx.clip();
-      const scale = Math.max((photoR * 2) / img.width, (photoR * 2) / img.height);
-      const w = img.width * scale;
-      const h = img.height * scale;
-      ctx.drawImage(img, cx - w / 2, photoY - h / 2, w, h);
-      ctx.restore();
-      ctx.strokeStyle = NAVY;
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.arc(cx, photoY, photoR, 0, Math.PI * 2);
-      ctx.stroke();
+      drawPhotoFrame(ctx, img, cx, photoY, photoR, theme);
     });
   }
 
   // "Happy birthday, {name(s)}!"
-  ctx.fillStyle = NAVY;
+  ctx.fillStyle = navy;
   ctx.font = 'bold 44px sans-serif';
   const greetingY = photos.length > 0 ? photoY + photoR + 80 : 300;
   let y = drawWrappedCentered(ctx, greetingBlock, CARD_W - 160, greetingY, 52);
@@ -328,37 +472,62 @@ async function generateBirthdayCard(celebrants, message) {
   ctx.font = '29px sans-serif';
   y = drawWrappedCentered(ctx, bodyBlock, CARD_W - 200, y + 40, 40);
 
-  // Quote box (verse text + reference)
+  // Quote box (verse text + reference) — border style depends on theme
   const cleanQuote = stripEmoji(quoteBlock);
   const quoteMatch = /^"(.+)"\s*—\s*(.+)$/.exec(cleanQuote);
   const quoteText = quoteMatch ? quoteMatch[1] : cleanQuote;
   const quoteRef = quoteMatch ? quoteMatch[2] : '';
   const boxTop = y + 20;
   const boxH = 150;
-  ctx.strokeStyle = '#C9D6E8';
-  ctx.lineWidth = 2;
+
+  if (theme.quoteBox === 'filled') {
+    ctx.fillStyle = `${navy}14`; // faint tint of navy
+    roundRect(ctx, 100, boxTop, CARD_W - 200, boxH, 16);
+    ctx.fill();
+  }
+  ctx.strokeStyle = theme.quoteBox === 'thick' ? navy : '#C9D6E8';
+  ctx.lineWidth = theme.quoteBox === 'thick' ? 4 : 2;
+  if (theme.quoteBox === 'dotted') ctx.setLineDash([4, 6]);
   roundRect(ctx, 100, boxTop, CARD_W - 200, boxH, 16);
   ctx.stroke();
-  ctx.fillStyle = NAVY;
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = navy;
   ctx.font = 'italic bold 28px sans-serif';
   drawWrappedCentered(ctx, `"${quoteText}"`, CARD_W - 260, boxTop + 55, 34);
   ctx.font = 'bold 22px sans-serif';
-  ctx.fillStyle = GOLD;
+  ctx.fillStyle = gold;
   ctx.fillText(`— ${quoteRef}`, CARD_W / 2, boxTop + boxH - 30);
 
-  // Footer — gold hairline, shallow navy curve, hashtag pills sitting
-  // inside the band (no emblem/wordmark).
+  // Footer — gold hairline + colored band (shape depends on theme), hashtag
+  // pills sitting inside the band (no emblem/wordmark).
   const footerTop = boxTop + boxH + 45;
   const pillH = 50;
   const footerPillY = footerTop + 62;
   const footerBottom = footerPillY + pillH + 45;
 
-  ctx.fillStyle = GOLD;
+  ctx.fillStyle = gold;
   ctx.fillRect(0, footerTop - 6, CARD_W, 6);
-  ctx.fillStyle = NAVY;
+  ctx.fillStyle = navy;
   ctx.beginPath();
-  ctx.moveTo(0, footerTop + 30);
-  ctx.quadraticCurveTo(CARD_W / 2, footerTop - 30, CARD_W, footerTop + 30);
+  if (theme.footer === 'curve') {
+    ctx.moveTo(0, footerTop + 30);
+    ctx.quadraticCurveTo(CARD_W / 2, footerTop - 30, CARD_W, footerTop + 30);
+  } else if (theme.footer === 'wave') {
+    ctx.moveTo(0, footerTop + 20);
+    ctx.quadraticCurveTo(CARD_W / 4, footerTop - 15, CARD_W / 2, footerTop + 20);
+    ctx.quadraticCurveTo((CARD_W / 4) * 3, footerTop + 55, CARD_W, footerTop + 20);
+  } else if (theme.footer === 'angle') {
+    ctx.moveTo(0, footerTop + 45);
+    ctx.lineTo(CARD_W / 2, footerTop);
+    ctx.lineTo(CARD_W, footerTop + 45);
+  } else if (theme.footer === 'diagonal') {
+    ctx.moveTo(0, footerTop + 45);
+    ctx.lineTo(CARD_W, footerTop);
+  } else {
+    ctx.moveTo(0, footerTop + 20);
+    ctx.lineTo(CARD_W, footerTop + 20);
+  }
   ctx.lineTo(CARD_W, footerBottom);
   ctx.lineTo(0, footerBottom);
   ctx.closePath();
@@ -373,7 +542,7 @@ async function generateBirthdayCard(celebrants, message) {
   const totalW = widths.reduce((a, b) => a + b, 0) + pillGap * (tags.length - 1);
   let px = CARD_W / 2 - totalW / 2;
   tags.forEach((tag, i) => {
-    ctx.fillStyle = PILL_NAVY;
+    ctx.fillStyle = pillNavy;
     ctx.strokeStyle = 'rgba(255,255,255,0.35)';
     ctx.lineWidth = 1.5;
     roundRect(ctx, px, footerPillY, widths[i], pillH, pillH / 2);
@@ -538,9 +707,11 @@ async function main() {
 
   console.log(`Today's celebrants: ${celebrants.map((c) => c.name).join(', ')}`);
 
-  const message = buildMessage(celebrants);
+  const templateIndex = pickTemplateIndex(celebrants);
+  const message = buildMessage(celebrants, templateIndex);
   console.log('--- Birthday post content ---');
   console.log(message);
+  console.log(`(message theme #${templateIndex + 1}/${GREETING_TEMPLATES.length} — card design will match)`);
   console.log('------------------------------');
 
   if (DRY_RUN === 'true') {
@@ -559,7 +730,7 @@ async function main() {
   // photo attached individually) so a post still goes out.
   const mediaFbids = [];
   try {
-    const cardBuffer = await generateBirthdayCard(celebrants, message);
+    const cardBuffer = await generateBirthdayCard(celebrants, message, templateIndex);
     const cardId = await uploadPhotoBuffer(cardBuffer);
     if (cardId) mediaFbids.push(cardId);
   } catch (err) {
