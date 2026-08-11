@@ -465,6 +465,67 @@
   .participant-row .p-name{font-size:13.5px;font-weight:500;}
   .participant-count{font-size:12px;color:var(--ink-soft);margin:8px 2px 0;}
 
+  /* ---- Minutes of Meeting (MOM) ---- */
+  .mom-editor-toolbar{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;}
+  .mom-editor-toolbar button{
+    font-family:var(--font-body);font-size:12.5px;font-weight:600;color:var(--ink-soft);
+    background:var(--surface);border:1px solid var(--line-strong);border-radius:7px;padding:5px 10px;cursor:pointer;
+  }
+  .mom-editor-toolbar button:hover{background:var(--paper);color:var(--ink);}
+  .mom-editor{
+    min-height:130px;max-height:220px;overflow-y:auto;border:1px solid var(--line-strong);border-radius:var(--radius);
+    padding:10px 12px;font-size:13.5px;line-height:1.55;background:var(--surface);
+  }
+  .mom-editor:focus{outline:none;border-color:var(--green);background:#fff;}
+  .mom-editor ul, .mom-editor ol{margin:0 0 8px;padding-left:22px;}
+  .mom-editor:empty:before{content:attr(data-placeholder);color:var(--ink-soft);}
+
+  .mom-attendee-grid{display:flex;flex-wrap:wrap;gap:6px;}
+  .mom-attendee-card{
+    display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-strong);border-radius:20px;
+    padding:3px 10px 3px 3px;background:linear-gradient(180deg,#ffffff,var(--paper));
+  }
+  .mom-att-avatar{
+    width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:9px;color:var(--green-dark);background:var(--green-tint);
+  }
+  .mom-att-name{font-size:12px;font-weight:600;color:var(--ink);}
+
+  .mom-action-row{display:grid;grid-template-columns:2fr 1.3fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px;}
+  @media(max-width:640px){ .mom-action-row{grid-template-columns:1fr;} }
+  .mom-remove-btn{background:none;border:none;color:var(--ink-soft);font-size:18px;line-height:1;cursor:pointer;padding:2px 6px;}
+  .mom-remove-btn:hover{color:#a33f3f;}
+
+  .mom-preview-modal{max-width:760px;max-height:90vh;overflow-y:auto;}
+  .mom-doc{background:#fff;padding:14px 10px;font-family:var(--font-body);color:var(--ink);}
+  .mom-doc h1{font-family:var(--font-display);font-weight:700;font-size:23px;text-align:center;letter-spacing:0.09em;margin:0 0 8px;color:var(--green-dark);}
+  .mom-doc .mom-title-line{font-family:var(--font-display);font-weight:600;font-size:16.5px;text-align:center;color:var(--ink);margin-bottom:6px;}
+  .mom-doc .mom-date{text-align:center;font-family:var(--font-mono);font-size:12px;letter-spacing:0.04em;color:var(--ink-soft);margin-bottom:8px;}
+  .mom-doc .mom-rule{border:none;border-top:2px solid var(--gold);width:56px;margin:0 auto 22px;}
+  .mom-doc h3{font-family:var(--font-display);font-weight:600;font-size:12.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--green-dark);margin:24px 0 10px;border-bottom:1px solid var(--line-strong);padding-bottom:5px;}
+  .mom-doc p{margin:0 0 8px;font-size:13.5px;line-height:1.6;}
+  .mom-doc ul, .mom-doc ol{margin:0 0 8px;padding-left:22px;font-size:13.5px;line-height:1.6;}
+  .mom-doc b, .mom-doc strong{font-weight:700;}
+  .mom-doc table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:6px;}
+  .mom-doc th, .mom-doc td{border:1px solid var(--line-strong);padding:6px 8px;text-align:left;}
+  .mom-doc th{font-family:var(--font-display);font-weight:600;background:var(--paper);}
+  .mom-sign{margin-top:30px;text-align:center;width:180px;}
+  .mom-sign .mom-sign-line{border-top:1px solid var(--line-strong);padding-top:4px;font-family:var(--font-body);font-size:12px;font-weight:600;color:var(--ink);}
+  .mom-sign .mom-sign-cap{font-family:var(--font-body);font-size:10.5px;color:var(--ink-soft);}
+
+  body.printing-mom .masthead, body.printing-mom .data-banner, body.printing-mom #reminderBanner,
+  body.printing-mom #todayBirthdayBanner, body.printing-mom .tabs, body.printing-mom .app-footer,
+  body.printing-mom .no-print{ display:none !important; }
+  /* The whole app shell (masthead, tabs, toolbars, whichever tab/table is
+     currently open, etc.) lives in .app; the MOM preview modal is a sibling
+     of it. Hiding .app entirely — instead of just its padding — is what
+     keeps the printed page to only the meeting document, matching what the
+     preview modal itself shows, with no leftover toolbar buttons. */
+  body.printing-mom .app{display:none !important;}
+  body.printing-mom .modal-overlay{position:static;background:none;padding:0;display:block !important;}
+  body.printing-mom .modal-overlay:not(#momPreviewOverlay){display:none !important;}
+  body.printing-mom .mom-preview-modal{box-shadow:none;border:none;max-height:none;max-width:none;padding:0;}
+
   .toast{
     position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
     background:var(--ink);color:#fff;padding:10px 18px;border-radius:8px;font-size:13.5px;
@@ -1086,6 +1147,16 @@
             <span class="perm-slider"></span>
           </label>
         </div>
+        <div class="perm-row">
+          <div class="perm-row-text">
+            <div class="perm-title">Minutes of Meeting</div>
+            <div class="perm-desc">Add and edit meeting minutes in the Minutes section.</div>
+          </div>
+          <label class="perm-switch">
+            <input type="checkbox" id="perm-mom">
+            <span class="perm-slider"></span>
+          </label>
+        </div>
       </div>
 
       <div class="perm-note">Name, Birthday, Started Attending and Membership Status stay locked for Staff on existing members regardless of these settings. Changes apply the next time the Staff account signs in or reloads the page.</div>
@@ -1146,11 +1217,12 @@
     <button class="tab-btn active" data-tab="roster" onclick="setTab('roster')">Active <span class="count" id="rosterCount"></span></button>
     <button class="tab-btn" data-tab="inactive" onclick="setTab('inactive')">Inactive <span class="count" id="inactiveCount"></span></button>
     <button class="tab-btn" data-tab="attendance" onclick="setTab('attendance')">Attendance <span class="count" id="attendanceLogCount"></span></button>
-    <button class="tab-btn" data-tab="workers" onclick="setTab('workers')">Worker Milestones<span class="count" id="workerCount"></span></button>
+    <button class="tab-btn" data-tab="workers" onclick="setTab('workers')">Milestones<span class="count" id="workerCount"></span></button>
     <button class="tab-btn" data-tab="volunteers" onclick="setTab('volunteers')">Volunteer <span class="count" id="volunteerCount"></span></button>
     <button class="tab-btn" data-tab="birthdays" onclick="setTab('birthdays')">Birthdays <span class="count" id="bdayCount"></span></button>
     <button class="tab-btn" data-tab="trainings" onclick="setTab('trainings')">Trainings <span class="count" id="trainingCount"></span></button>
-    <button class="tab-btn" data-tab="structure" onclick="setTab('structure')">Church Structure</button>
+    <button class="tab-btn" data-tab="mom" onclick="setTab('mom')">Minutes <span class="count" id="momCount"></span></button>
+    <button class="tab-btn" data-tab="structure" onclick="setTab('structure')">Ministries</button>
   </div>
 
   <!-- ROSTER VIEW -->
@@ -1527,6 +1599,25 @@
     </div>
   </div>
 
+  <!-- MINUTES OF MEETING VIEW -->
+  <div id="view-mom" style="display:none;">
+    <div class="toolbar">
+      <button class="btn btn-primary" id="addMomBtn" onclick="openMomForm()">+ New Meeting</button>
+      <input class="search" id="searchBoxMom" type="text" placeholder="Search title, presider or date" oninput="renderMOM()">
+      <select class="filter" id="momYearFilter" onchange="renderMOM()"><option value="">All Years</option></select>
+    </div>
+    <div class="roster-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Title</th><th>Presider</th><th></th></tr></thead>
+        <tbody id="momBody"></tbody>
+      </table>
+      <div class="empty-state" id="momEmptyState" style="display:none;">
+        <h3>No minutes of meeting yet</h3>
+        <div>Click "+ New Meeting" to record your first MOM.</div>
+      </div>
+    </div>
+  </div>
+
   <!-- CHURCH STRUCTURE VIEW -->
   <div id="view-structure" style="display:none;">
     <div class="hint" style="margin-top:0;margin-bottom:16px;">
@@ -1679,6 +1770,80 @@
       <div></div>
       <div class="right">
         <button type="button" class="btn btn-ghost" onclick="closeTrainingViewer()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MINUTES OF MEETING - ADD/EDIT MODAL -->
+<div class="modal-overlay" id="momModalOverlay">
+  <div class="modal" style="max-width:720px;max-height:88vh;overflow-y:auto;">
+    <h2 id="momModalTitle">Add Meeting</h2>
+    <form id="momForm" onsubmit="return false;">
+      <input type="hidden" id="mom-id">
+      <div class="form-grid">
+        <div class="field"><label>Meeting Date</label><input type="date" id="mom-date"></div>
+        <div class="field"><label>Presider <span class="muted" style="font-weight:400;">(active leaders)</span></label><select id="mom-presider" onchange="handleMomPresiderChange()"></select></div>
+      </div>
+      <div class="form-grid full">
+        <div class="field">
+          <label>Meeting Title</label>
+          <div style="display:flex;gap:6px;">
+            <select id="mom-title" style="flex:1;"></select>
+            <button type="button" class="btn btn-sm" onclick="addMomTitleOption()" title="Add new meeting title">+ Add</button>
+            <button type="button" class="btn btn-sm btn-danger" onclick="deleteMomTitleOption()" title="Delete selected meeting title">Delete</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Meeting Notes / Discussions</label>
+          <div class="mom-editor-toolbar no-print">
+            <button type="button" onclick="momExec('bold')" title="Bold"><b>B</b></button>
+            <button type="button" onclick="momExec('italic')" title="Italic"><i>I</i></button>
+            <button type="button" onclick="momExec('underline')" title="Underline"><u>U</u></button>
+            <button type="button" onclick="momExec('insertUnorderedList')" title="Bullet list">&bull; List</button>
+            <button type="button" onclick="momExec('insertOrderedList')" title="Numbered list">1. List</button>
+            <button type="button" onclick="momExec('outdent')" title="Outdent">&#8676;</button>
+            <button type="button" onclick="momExec('indent')" title="Indent">&#8677;</button>
+            <button type="button" onclick="momExec('justifyLeft')" title="Align left">&#8801;</button>
+            <button type="button" onclick="momExec('justifyCenter')" title="Align center">&#9776;</button>
+            <button type="button" onclick="momExec('justifyRight')" title="Align right">&#8801;</button>
+            <button type="button" onclick="momExec('undo')" title="Undo">&#8630;</button>
+            <button type="button" onclick="momExec('redo')" title="Redo">&#8631;</button>
+            <button type="button" onclick="momExec('removeFormat')" title="Clear formatting">Clear</button>
+          </div>
+          <div id="mom-notes" class="mom-editor" contenteditable="true" data-placeholder="Type your notes here — use the toolbar above for bullets and numbered lists, just like a word editor."></div>
+        </div>
+      </div>
+
+      <div class="form-section-title">Action Items</div>
+      <div id="momActionList"></div>
+      <button type="button" class="btn btn-sm" onclick="addMomActionRow()">+ Add action item</button>
+
+      <div class="form-section-title">Leaders Attendance <span class="muted" style="font-weight:400;">(active leaders)</span></div>
+      <div class="participant-picker" id="momAttendancePicker"></div>
+
+      <datalist id="momMemberNames"></datalist>
+
+      <div class="modal-actions">
+        <div><button type="button" class="btn btn-danger" id="deleteMomBtn" onclick="deleteMom()" style="display:none;">Delete</button></div>
+        <div class="right">
+          <button type="button" class="btn btn-ghost" onclick="closeMomForm()">Cancel</button>
+          <button type="button" class="btn btn-primary" onclick="saveMom()">Save meeting</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MINUTES OF MEETING - PREVIEW / PRINT MODAL -->
+<div class="modal-overlay" id="momPreviewOverlay">
+  <div class="modal mom-preview-modal">
+    <div id="momPrintArea" class="mom-doc"></div>
+    <div class="modal-actions no-print">
+      <div></div>
+      <div class="right">
+        <button type="button" class="btn btn-ghost" onclick="closeMomPreview()">Close</button>
+        <button type="button" class="btn btn-primary" onclick="printMom()">Print / Save as PDF</button>
       </div>
     </div>
   </div>
@@ -1987,6 +2152,124 @@ async function deleteOneTraining(id){
 }
 
 
+// ---- Meeting Title options (combo box on the MOM form) ----
+// Stored locally only (small convenience list, not core data). Always
+// starts with the default 'Leadership Meeting' plus any custom titles
+// the user has added before.
+const MOM_TITLE_CACHE_KEY = 'church-mom-titles-cache';
+let momTitleOptions = ['Leadership Meeting'];
+(function loadMomTitleOptions(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(MOM_TITLE_CACHE_KEY) || '[]');
+    saved.forEach(t=>{ if(t && !momTitleOptions.includes(t)) momTitleOptions.push(t); });
+  }catch(e){ /* storage disabled */ }
+})();
+function saveMomTitleOptions(){
+  try{ localStorage.setItem(MOM_TITLE_CACHE_KEY, JSON.stringify(momTitleOptions.filter(t=>t!=='Leadership Meeting'))); }
+  catch(e){ /* storage disabled */ }
+}
+function renderMomTitleOptions(selected){
+  $('mom-title').innerHTML = momTitleOptions.map(t=>`<option value="${escapeHtml(t)}" ${t===selected?'selected':''}>${escapeHtml(t)}</option>`).join('');
+}
+function addMomTitleOption(){
+  const val = (prompt('New meeting title:') || '').trim();
+  if(!val) return;
+  if(!momTitleOptions.includes(val)) momTitleOptions.push(val);
+  saveMomTitleOptions();
+  renderMomTitleOptions(val);
+}
+function deleteMomTitleOption(){
+  const sel = $('mom-title');
+  const val = sel ? sel.value : '';
+  if(!val) return;
+  if(val === 'Leadership Meeting'){ toast('The default "Leadership Meeting" title can\'t be deleted'); return; }
+  if(!confirm(`Delete the meeting title "${val}" from the list? Meetings already saved with this title keep it.`)) return;
+  momTitleOptions = momTitleOptions.filter(t=>t!==val);
+  saveMomTitleOptions();
+  renderMomTitleOptions('Leadership Meeting');
+}
+
+// ---- Minutes of Meeting (Supabase tables "meeting_minutes" and
+// "meeting_attendance"). Action items are stored as a jsonb column on
+// meeting_minutes to avoid a third table. Attendance rows are re-written
+// per meeting on save (row-scoped, same pattern as trainings above).
+let momList = [];
+const MOM_CACHE_KEY = 'church-mom-cache';
+
+function cacheMomLocally(){
+  try{ localStorage.setItem(MOM_CACHE_KEY, JSON.stringify(momList)); }
+  catch(e){ /* storage disabled */ }
+}
+function readCachedMom(){
+  try{ const raw = localStorage.getItem(MOM_CACHE_KEY); return raw ? JSON.parse(raw) : []; }
+  catch(e){ return []; }
+}
+
+function momToDbRow(mom){
+  return {
+    id: mom.id,
+    meeting_date: mom.date || null,
+    title: mom.title || '',
+    presider: mom.presider || '',
+    notes: mom.notes || '',
+    action_items: Array.isArray(mom.actionItems) ? mom.actionItems : [],
+  };
+}
+function dbRowToMom(r){
+  return {
+    id: r.id,
+    date: r.meeting_date || '',
+    title: r.title || '',
+    presider: r.presider || '',
+    notes: r.notes || '',
+    actionItems: Array.isArray(r.action_items) ? r.action_items : [],
+    attendeeIds: [],
+  };
+}
+
+async function loadMOM(){
+  try{
+    const [mmRes, attRes] = await Promise.all([
+      supabaseClient.from('meeting_minutes').select('*').order('meeting_date', { ascending:false }),
+      supabaseClient.from('meeting_attendance').select('*'),
+    ]);
+    if(mmRes.error) throw mmRes.error;
+    const list = (mmRes.data || []).map(dbRowToMom);
+    const byId = new Map(list.map(m=>[m.id, m]));
+    (attRes.data || []).forEach(a=>{ const m = byId.get(a.meeting_id); if(m) m.attendeeIds.push(a.member_id); });
+    momList = list;
+    cacheMomLocally();
+  }catch(e){
+    console.error('Supabase MOM load failed:', e);
+    momList = readCachedMom();
+  }
+}
+
+async function saveOneMom(mom){
+  cacheMomLocally();
+  try{
+    const { error } = await supabaseClient.from('meeting_minutes').upsert(momToDbRow(mom), { onConflict:'id' });
+    if(error) throw error;
+    await supabaseClient.from('meeting_attendance').delete().eq('meeting_id', mom.id);
+    const rows = (mom.attendeeIds||[]).map(mid=>({ id: uid(), meeting_id: mom.id, member_id: mid, member_name: (members.find(m=>m.id===mid)||{}).name || '' }));
+    if(rows.length) await supabaseClient.from('meeting_attendance').insert(rows);
+  }catch(e){
+    console.error('Supabase MOM save failed:', e);
+    toast('⚠ Saved locally, but Supabase sync failed — check your connection');
+  }
+}
+async function deleteOneMom(id){
+  cacheMomLocally();
+  try{
+    await supabaseClient.from('meeting_attendance').delete().eq('meeting_id', id);
+    await supabaseClient.from('meeting_minutes').delete().eq('id', id);
+  }catch(e){
+    console.error('Supabase MOM delete failed:', e);
+    toast('⚠ Deleted locally, but Supabase delete failed — check your connection');
+  }
+}
+
+
 // ---- Church Role catalog (Ministry Category -> Church Roles) ----
 // Each role is stored as {label, value}. `value` is the full, unique text
 // saved on the member record (e.g. "Music Ministry Head") so roles from
@@ -2247,6 +2530,7 @@ function hideDataBanner(){
 
 async function loadData(){
   await loadTrainings();
+  await loadMOM();
   try{
     const { data, error } = await supabaseClient
       .from('members')
@@ -3139,6 +3423,7 @@ function setTab(tab){
   $('view-volunteers').style.display = tab==='volunteers' ? '' : 'none';
   $('view-birthdays').style.display = tab==='birthdays' ? '' : 'none';
   $('view-trainings').style.display = tab==='trainings' ? '' : 'none';
+  $('view-mom').style.display = tab==='mom' ? '' : 'none';
   $('view-structure').style.display = tab==='structure' ? '' : 'none';
   if(tab==='inactive'){ renderInactive(); }
   if(tab==='attendance'){ setAttendanceSub('overview'); }
@@ -3146,6 +3431,7 @@ function setTab(tab){
   if(tab==='volunteers'){ renderVolunteerAnniversary(); }
   if(tab==='birthdays'){ renderCelebrants(); renderBirthdays(); renderMonths(); }
   if(tab==='trainings'){ renderTrainings(); }
+  if(tab==='mom'){ renderMOM(); }
   if(tab==='structure'){ renderStructure(); }
 }
 
@@ -4246,6 +4532,228 @@ async function deleteTraining(){
   toast('Training deleted');
 }
 
+// ==== MINUTES OF MEETING (MOM) ====
+
+function renderMOM(){
+  // Year filter options: every year that appears in the saved meeting
+  // dates, newest first, rebuilt each render so newly added years show up.
+  const yearSel = $('momYearFilter');
+  if(yearSel){
+    const years = Array.from(new Set(momList.map(m=>(m.date||'').slice(0,4)).filter(Boolean))).sort((a,b)=>b.localeCompare(a));
+    const prevYear = yearSel.value;
+    yearSel.innerHTML = '<option value="">All Years</option>' + years.map(y=>`<option value="${y}" ${y===prevYear?'selected':''}>${y}</option>`).join('');
+  }
+
+  const momQ = ($('searchBoxMom') ? $('searchBoxMom').value : '').trim().toLowerCase();
+  const yearQ = yearSel ? yearSel.value : '';
+
+  let list = momList.filter(m=>{
+    if(momQ){
+      const hay = [(m.title||''), (m.presider||''), (m.date||''), (m.date?fmtDate(m.date):'')].join(' ').toLowerCase();
+      if(!hay.includes(momQ)) return false;
+    }
+    if(yearQ && (m.date||'').slice(0,4) !== yearQ) return false;
+    return true;
+  });
+  list.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+
+  const body = $('momBody');
+  if(body){
+    body.innerHTML = list.map(m=>`
+      <tr onclick="openMomPreview('${m.id}')">
+        <td class="mono muted">${m.date ? fmtDate(m.date) : '—'}</td>
+        <td class="name-cell">${escapeHtml(m.title)}</td>
+        <td class="muted">${escapeHtml(m.presider)}</td>
+        <td>
+          <div class="row-actions">
+            <button class="btn btn-sm" onclick="event.stopPropagation(); openMomPreview('${m.id}')">Preview</button>
+            ${canEditMom() ? `<button class="btn btn-sm" onclick="event.stopPropagation(); openMomForm('${m.id}')">Edit</button>` : ''}
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+  if($('momEmptyState')) $('momEmptyState').style.display = list.length ? 'none' : '';
+  if($('momCount')) $('momCount').textContent = momList.length;
+}
+
+function activeLeaders(){ return members.filter(m=>m.leader && m.active !== false); }
+
+let editingMomId = null;
+let momAttendeeIds = new Set();
+let momActionItems = [];
+
+function openMomForm(id){
+  if(!canEditMom()) return;
+  editingMomId = id || null;
+  const m = id ? momList.find(x=>x.id===id) : null;
+  $('momModalTitle').textContent = id ? 'Edit Meeting' : 'Add Meeting';
+  $('mom-id').value = m ? m.id : '';
+  $('mom-date').value = m ? m.date : '';
+  const titleVal = m ? (m.title || 'Leadership Meeting') : 'Leadership Meeting';
+  if(titleVal && !momTitleOptions.includes(titleVal)){ momTitleOptions.push(titleVal); saveMomTitleOptions(); }
+  renderMomTitleOptions(titleVal);
+  renderMomPresiderOptions(m ? m.presider : '');
+  $('mom-notes').innerHTML = m ? (m.notes || '') : '';
+
+  const dl = $('momMemberNames');
+  if(dl) dl.innerHTML = members.filter(mm=>mm.active !== false && (mm.worker || mm.leader)).map(mm=>`<option value="${escapeHtml(mm.name)}">`).join('');
+
+  momAttendeeIds = new Set(m && Array.isArray(m.attendeeIds) ? m.attendeeIds : []);
+  momActionItems = (m && Array.isArray(m.actionItems) ? m.actionItems : []).map(a=>({...a}));
+
+  renderMomAttendancePicker();
+  renderMomActionList();
+
+  $('deleteMomBtn').style.display = (id && canDeleteData()) ? '' : 'none';
+  $('momModalOverlay').classList.add('open');
+  setTimeout(()=>$('mom-title').focus(), 0);
+}
+function closeMomForm(){
+  $('momModalOverlay').classList.remove('open');
+  editingMomId = null;
+}
+
+// Presider select is restricted to active leaders only. Whoever is picked
+// as presider is excluded from the Leaders Attendance list below, since
+// they're already accounted for as the presider.
+function renderMomPresiderOptions(selectedName){
+  const sel = $('mom-presider');
+  if(!sel) return;
+  const leaders = activeLeaders().sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  let optionsHtml = '<option value="">-- Select presider --</option>';
+  optionsHtml += leaders.map(m=>`<option value="${escapeHtml(m.name)}" ${m.name===selectedName?'selected':''}>${escapeHtml(m.name)}</option>`).join('');
+  // Keep a previously-saved presider visible even if they're no longer an
+  // active leader, so we don't silently overwrite existing meeting data.
+  if(selectedName && !leaders.some(m=>m.name===selectedName)){
+    optionsHtml += `<option value="${escapeHtml(selectedName)}" selected>${escapeHtml(selectedName)} (not an active leader)</option>`;
+  }
+  sel.innerHTML = optionsHtml;
+}
+function handleMomPresiderChange(){
+  const presiderName = $('mom-presider').value;
+  const presiderMember = activeLeaders().find(m=>m.name===presiderName);
+  if(presiderMember) momAttendeeIds.delete(presiderMember.id);
+  renderMomAttendancePicker();
+}
+function renderMomAttendancePicker(){
+  const presiderName = $('mom-presider') ? $('mom-presider').value : '';
+  const leaders = activeLeaders().filter(m=>m.name!==presiderName).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const box = $('momAttendancePicker');
+  box.innerHTML = leaders.length ? leaders.map(m=>`
+    <label class="participant-row">
+      <input type="checkbox" value="${m.id}" ${momAttendeeIds.has(m.id) ? 'checked' : ''} onchange="toggleMomAttendee('${m.id}', this.checked)">
+      <span class="p-name">${escapeHtml(m.name)}</span>
+    </label>
+  `).join('') : `<div class="muted" style="padding:14px;text-align:center;">No active Leaders on file.</div>`;
+}
+function toggleMomAttendee(id, checked){
+  if(checked) momAttendeeIds.add(id); else momAttendeeIds.delete(id);
+}
+
+function renderMomActionList(){
+  const box = $('momActionList');
+  box.innerHTML = momActionItems.length ? momActionItems.map((a,i)=>`
+    <div class="mom-action-row">
+      <div class="field"><label>Action Item</label><input type="text" value="${escapeHtml(a.item)}" oninput="momActionItems[${i}].item=this.value"></div>
+      <div class="field"><label>Assigned To</label><input type="text" list="momMemberNames" value="${escapeHtml(a.assignedTo)}" oninput="momActionItems[${i}].assignedTo=this.value"></div>
+      <div class="field"><label>Status</label>
+        <select onchange="momActionItems[${i}].status=this.value">
+          ${['Pending','Ongoing','Completed'].map(s=>`<option value="${s}" ${a.status===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+      <button type="button" class="mom-remove-btn" onclick="removeMomActionRow(${i})" title="Remove">&times;</button>
+    </div>
+  `).join('') : `<div class="muted" style="padding:6px 2px;">No action items yet.</div>`;
+}
+function addMomActionRow(){ momActionItems.push({ item:'', assignedTo:'', status:'Pending' }); renderMomActionList(); }
+function removeMomActionRow(i){ momActionItems.splice(i,1); renderMomActionList(); }
+
+async function saveMom(){
+  if(!canEditMom()) return;
+  const title = $('mom-title').value.trim();
+  if(!title){ toast('Meeting title is required'); $('mom-title').focus(); return; }
+  const data = {
+    id: editingMomId || uid(),
+    date: $('mom-date').value,
+    title,
+    presider: $('mom-presider').value.trim(),
+    notes: $('mom-notes').innerHTML,
+    actionItems: momActionItems.filter(a=>a.item),
+    attendeeIds: Array.from(momAttendeeIds),
+  };
+  const idx = momList.findIndex(m=>m.id===data.id);
+  if(idx>=0) momList[idx] = data; else momList.push(data);
+  await saveOneMom(data);
+  renderMOM();
+  closeMomForm();
+  toast(editingMomId ? 'Meeting minutes updated' : 'Meeting minutes added');
+}
+
+async function deleteMom(){
+  if(!canDeleteData()) return;
+  if(!editingMomId) return;
+  if(!confirm('Delete this meeting record? This cannot be undone.')) return;
+  const idToDelete = editingMomId;
+  momList = momList.filter(m=>m.id!==idToDelete);
+  await deleteOneMom(idToDelete);
+  renderMOM();
+  closeMomForm();
+  toast('Meeting minutes deleted');
+}
+
+// Simple word-editor-style toolbar for the Notes field.
+function momExec(cmd, value){
+  $('mom-notes').focus();
+  document.execCommand(cmd, false, value || null);
+}
+
+function openMomPreview(id){
+  const m = momList.find(x=>x.id===id);
+  if(!m) return;
+  const validActionItems = (m.actionItems||[]).filter(a=>a && (a.item||'').trim());
+  const actionRows = validActionItems.length
+    ? validActionItems.map(a=>`<tr><td>${escapeHtml(a.item)}</td><td>${escapeHtml(a.assignedTo)}</td><td>${escapeHtml(a.status)}</td></tr>`).join('')
+    : '';
+  const actionItemsSection = validActionItems.length
+    ? `<h3>Action Items</h3>
+    <table><thead><tr><th>Action Item</th><th>Assigned To</th><th>Status</th></tr></thead><tbody>${actionRows}</tbody></table>`
+    : '';
+  const attendees = members.filter(mm => (m.attendeeIds||[]).includes(mm.id) && mm.active !== false)
+    .sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const attendeeGrid = attendees.length
+    ? `<div class="mom-attendee-grid">${attendees.map(a=>`
+        <div class="mom-attendee-card">
+          <div class="mom-att-avatar">${initials(a.name)}</div>
+          <span class="mom-att-name">${escapeHtml(a.name)}</span>
+        </div>`).join('')}</div>`
+    : `<p class="muted">No attendees recorded.</p>`;
+
+  $('momPrintArea').innerHTML = `
+    <h1>MINUTES OF MEETING</h1>
+    <div class="mom-title-line">${escapeHtml(m.title)}</div>
+    <div class="mom-date">DATE: ${m.date ? fmtDate(m.date) : '—'}</div>
+    <hr class="mom-rule">
+    ${m.notes || '<p class="muted">No notes recorded.</p>'}
+    ${actionItemsSection}
+    <h3>Ministry Leadership Attendees</h3>
+    ${attendeeGrid}
+    <div class="mom-sign">
+      <div class="mom-sign-line">${escapeHtml(m.presider) || '&nbsp;'}</div>
+      <div class="mom-sign-cap">Presider</div>
+    </div>
+  `;
+  $('momPreviewOverlay').classList.add('open');
+}
+function closeMomPreview(){ $('momPreviewOverlay').classList.remove('open'); }
+
+function printMom(){
+  document.body.classList.add('printing-mom');
+  const cleanup = ()=>{ document.body.classList.remove('printing-mom'); window.removeEventListener('afterprint', cleanup); };
+  window.addEventListener('afterprint', cleanup);
+  setTimeout(()=>{ window.print(); }, 60);
+}
+
 function openForm(id){
   if(!canEditData()) return; // view-only accounts can't open the member form
   editingId = id || null;
@@ -5254,7 +5762,7 @@ loadRoleCredentialsFromSupabase();
    table exists. SQL to create it:
      create table app_settings (id text primary key, value jsonb);
    ========================================================================= */
-const STAFF_PERMISSION_DEFAULTS = { worker:false, leader:false, churchRole:false, training:false };
+const STAFF_PERMISSION_DEFAULTS = { worker:false, leader:false, churchRole:false, training:false, mom:false };
 const STAFF_PERMISSIONS_KEY = 'tglcc_staff_permissions';
 let staffPermissions = { ...STAFF_PERMISSION_DEFAULTS };
 
@@ -5290,6 +5798,7 @@ function openStaffPermissions(){
   $('perm-leader').checked = !!staffPermissions.leader;
   $('perm-churchRole').checked = !!staffPermissions.churchRole;
   $('perm-training').checked = !!staffPermissions.training;
+  $('perm-mom').checked = !!staffPermissions.mom;
   $('staffPermissionsOverlay').classList.add('open');
 }
 
@@ -5304,6 +5813,7 @@ async function saveStaffPermissions(){
     leader: $('perm-leader').checked,
     churchRole: $('perm-churchRole').checked,
     training: $('perm-training').checked,
+    mom: $('perm-mom').checked,
   };
   await persistStaffPermissions();
   closeStaffPermissions();
@@ -5338,6 +5848,7 @@ function canToggleActive(){ return currentRole === 'admin'; }                   
 function canChangePasswords(){ return currentRole === 'admin'; }
 function canImportData(){ return currentRole === 'admin' || currentRole === 'user1'; }
 function canEditTraining(){ return currentRole === 'admin' || (currentRole === 'user1' && !!staffPermissions.training); }   // add/edit/delete trainings — admin always; Staff only if granted via Staff Permissions
+function canEditMom(){ return currentRole === 'admin' || (currentRole === 'user1' && !!staffPermissions.mom); }   // add/edit meeting minutes — admin always; Staff only if granted via Staff Permissions
 
 // Applies the current role's permissions across the whole UI: shows/hides
 // buttons that aren't allowed, and (re)runs whenever we log in or re-render.
@@ -5357,6 +5868,7 @@ function applyRolePermissions(){
 
   setDisplay('addMemberBtn', editable);
   setDisplay('addTrainingBtn', canEditTraining());
+  setDisplay('addMomBtn', canEditMom());
   setDisplay('importExcelBtn', canImportData());
   setDisplay('saveFileBtn', !viewer);       // Viewer loses the Save (to file) button
   setDisplay('loadFileBtn', admin); // Admin loads freely; Staff no longer sees the Load button at all
@@ -5378,6 +5890,7 @@ function applyRolePermissions(){
   if(typeof renderRoster === 'function') renderRoster();
   if(typeof renderInactive === 'function') renderInactive();
   if(typeof renderTrainings === 'function') renderTrainings();
+  if(typeof renderMOM === 'function') renderMOM();
 }
 
 function attemptLogin(){
