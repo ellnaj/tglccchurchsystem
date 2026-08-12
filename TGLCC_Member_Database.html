@@ -513,6 +513,27 @@
   .mom-sign .mom-sign-line{border-top:1px solid var(--line-strong);padding-top:4px;font-family:var(--font-body);font-size:12px;font-weight:600;color:var(--ink);}
   .mom-sign .mom-sign-cap{font-family:var(--font-body);font-size:10.5px;color:var(--ink-soft);}
 
+  /* ---- Comments & Corrections (admin preview modal) ---- */
+  .mom-comments-section{
+    margin:0 10px 14px;padding:16px 18px;background:var(--paper);border:1px solid var(--line-strong);border-radius:var(--radius);
+  }
+  .mom-comments-title{
+    font-family:var(--font-display);font-weight:600;font-size:13px;letter-spacing:0.04em;text-transform:uppercase;
+    color:var(--green-dark);margin:0 0 12px;border-bottom:1px solid var(--line-strong);padding-bottom:8px;
+  }
+  .mom-comment-list{display:flex;flex-direction:column;gap:10px;}
+  .mom-comment-item{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;}
+  .mom-comment-item-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap;}
+  .mom-comment-item-date{font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);}
+  .mom-comment-item-text{font-size:13px;line-height:1.55;color:var(--ink);white-space:pre-wrap;}
+  .mom-comment-delete-btn{
+    background:none;border:none;padding:0;font-family:var(--font-body);font-size:11.5px;font-weight:600;
+    color:var(--red);cursor:pointer;
+  }
+  .mom-comment-delete-btn:hover{text-decoration:underline;}
+  .mom-comment-replies{display:flex;flex-direction:column;gap:8px;margin-top:10px;padding-left:14px;border-left:2px solid var(--line-strong);}
+  .mom-comment-empty, .mom-comment-loading{font-size:13px;color:var(--ink-soft);padding:2px;}
+
   body.printing-mom .masthead, body.printing-mom .data-banner, body.printing-mom #reminderBanner,
   body.printing-mom #todayBirthdayBanner, body.printing-mom .tabs, body.printing-mom .app-footer,
   body.printing-mom .no-print{ display:none !important; }
@@ -1820,6 +1841,10 @@
       <button type="button" class="btn btn-sm" onclick="addMomActionRow()">+ Add action item</button>
 
       <div class="form-section-title">Leaders Attendance <span class="muted" style="font-weight:400;">(active leaders)</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;">
+        <div class="participant-count" id="momAttendanceCount" style="margin:0;"></div>
+        <button type="button" class="btn btn-sm btn-ghost" id="momSelectAllBtn" onclick="toggleMomSelectAll()">Select all</button>
+      </div>
       <div class="participant-picker" id="momAttendancePicker"></div>
 
       <datalist id="momMemberNames"></datalist>
@@ -1839,6 +1864,7 @@
 <div class="modal-overlay" id="momPreviewOverlay">
   <div class="modal mom-preview-modal">
     <div id="momPrintArea" class="mom-doc"></div>
+    <div id="momCommentsSection" class="mom-comments-section no-print"></div>
     <div class="modal-actions no-print">
       <div></div>
       <div class="right">
@@ -4646,9 +4672,37 @@ function renderMomAttendancePicker(){
       <span class="p-name">${escapeHtml(m.name)}</span>
     </label>
   `).join('') : `<div class="muted" style="padding:14px;text-align:center;">No active Leaders on file.</div>`;
+  updateMomAttendanceCount(leaders);
 }
 function toggleMomAttendee(id, checked){
   if(checked) momAttendeeIds.add(id); else momAttendeeIds.delete(id);
+  updateMomAttendanceCount();
+}
+// Keeps the "X selected" label and the Select all / Clear all button in
+// sync with the currently visible (non-presider, active) leaders list.
+function updateMomAttendanceCount(leadersList){
+  const presiderName = $('mom-presider') ? $('mom-presider').value : '';
+  const leaders = leadersList || activeLeaders().filter(m=>m.name!==presiderName);
+  const countEl = $('momAttendanceCount');
+  if(countEl) countEl.textContent = `${momAttendeeIds.size} of ${leaders.length} selected`;
+  const btn = $('momSelectAllBtn');
+  if(btn){
+    const allSelected = leaders.length>0 && leaders.every(m=>momAttendeeIds.has(m.id));
+    btn.textContent = allSelected ? 'Clear all' : 'Select all';
+  }
+}
+// Toggles between selecting every currently-listed leader and clearing
+// the selection entirely.
+function toggleMomSelectAll(){
+  const presiderName = $('mom-presider') ? $('mom-presider').value : '';
+  const leaders = activeLeaders().filter(m=>m.name!==presiderName);
+  const allSelected = leaders.length>0 && leaders.every(m=>momAttendeeIds.has(m.id));
+  if(allSelected){
+    leaders.forEach(m=>momAttendeeIds.delete(m.id));
+  } else {
+    leaders.forEach(m=>momAttendeeIds.add(m.id));
+  }
+  renderMomAttendancePicker();
 }
 
 function renderMomActionList(){
@@ -4744,8 +4798,115 @@ function openMomPreview(id){
     </div>
   `;
   $('momPreviewOverlay').classList.add('open');
+  loadAndRenderMomComments(m.id);
 }
 function closeMomPreview(){ $('momPreviewOverlay').classList.remove('open'); }
+
+// ---- Comments & Corrections (read from the same "meeting_comments" table
+// the public MOM Viewer writes to; admins can delete individual comments
+// or replies — deleting a top-level comment cascades to its replies via
+// the table's ON DELETE CASCADE foreign key). ----
+let momCommentsMeetingId = null;
+let momCommentsCache = [];
+
+function fmtDateTimeMomComment(ts){
+  if(!ts) return '';
+  const dt = new Date(ts);
+  if(isNaN(dt.getTime())) return '';
+  return dt.toLocaleString('en-US', {month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit'});
+}
+
+function buildMomCommentTree(rows){
+  const byId = new Map();
+  rows.forEach(r=>byId.set(r.id, Object.assign({}, r, { replies: [] })));
+  const roots = [];
+  byId.forEach(c=>{
+    if(c.parent_id && byId.has(c.parent_id)){
+      byId.get(c.parent_id).replies.push(c);
+    }else{
+      roots.push(c);
+    }
+  });
+  return roots;
+}
+
+function momCommentItemHtml(c, isReply){
+  const repliesHtml = (c.replies && c.replies.length)
+    ? `<div class="mom-comment-replies">${c.replies.map(r=>momCommentItemHtml(r, true)).join('')}</div>`
+    : '';
+  const deleteBtn = isAdminRole()
+    ? `<button type="button" class="mom-comment-delete-btn" onclick="deleteMomComment('${c.id}')">Delete</button>`
+    : '';
+  return `
+    <div class="mom-comment-item">
+      <div class="mom-comment-item-head">
+        <span class="mom-comment-item-date">${fmtDateTimeMomComment(c.created_at)}</span>
+        ${deleteBtn}
+      </div>
+      <div class="mom-comment-item-text">${escapeHtml(c.comment_text)}</div>
+      ${repliesHtml}
+    </div>
+  `;
+}
+
+function renderMomCommentsBox(comments, loading, errored){
+  const box = $('momCommentsSection');
+  if(!box) return;
+  // If there's nothing to show (not loading, no error, and no comments),
+  // don't render the section at all so it doesn't take up space in the
+  // preview layout.
+  if(!loading && !errored && !comments.length){
+    box.innerHTML = '';
+    box.style.display = 'none';
+    return;
+  }
+  box.style.display = '';
+  let listHtml;
+  if(loading){
+    listHtml = '<div class="mom-comment-loading">Loading comments…</div>';
+  }else if(errored){
+    listHtml = '<div class="mom-comment-empty">Comments are unavailable right now.</div>';
+  }else{
+    const tree = buildMomCommentTree(comments);
+    listHtml = `<div class="mom-comment-list">${tree.map(c=>momCommentItemHtml(c, false)).join('')}</div>`;
+  }
+  box.innerHTML = `<h3 class="mom-comments-title">Comments &amp; Corrections</h3>${listHtml}`;
+}
+
+async function loadAndRenderMomComments(meetingId){
+  momCommentsMeetingId = meetingId;
+  renderMomCommentsBox([], true, false);
+  try{
+    const { data, error } = await supabaseClient
+      .from('meeting_comments')
+      .select('*')
+      .eq('meeting_id', meetingId)
+      .order('created_at', { ascending: true });
+    if(error) throw error;
+    if(momCommentsMeetingId !== meetingId) return;
+    momCommentsCache = data || [];
+    renderMomCommentsBox(momCommentsCache, false, false);
+  }catch(e){
+    console.error('Failed to load comments:', e);
+    if(momCommentsMeetingId !== meetingId) return;
+    momCommentsCache = [];
+    renderMomCommentsBox([], false, true);
+  }
+}
+
+async function deleteMomComment(commentId){
+  if(!isAdminRole()) return;
+  if(!confirm('Delete this comment? This cannot be undone.')) return;
+  try{
+    const { error } = await supabaseClient.from('meeting_comments').delete().eq('id', commentId);
+    if(error) throw error;
+    toast('Comment deleted');
+    loadAndRenderMomComments(momCommentsMeetingId);
+  }catch(e){
+    console.error('Failed to delete comment:', e);
+    toast('Unable to delete comment right now');
+  }
+}
 
 function printMom(){
   document.body.classList.add('printing-mom');
