@@ -184,6 +184,7 @@
     border-radius:var(--radius);box-shadow:0 20px 50px -12px rgba(41,38,32,.35), 0 8px 20px rgba(41,38,32,.15);
   }
   .mom-doc{background:#fff;padding:26px 24px;font-family:var(--font-body);color:var(--ink);border-radius:var(--radius) var(--radius) 0 0;}
+  .mom-print-header{display:none;}
   .mom-doc h1{font-family:var(--font-display);font-weight:700;font-size:23px;text-align:center;letter-spacing:0.09em;margin:0 0 8px;color:var(--green-dark);}
   .mom-doc .mom-title-line{font-family:var(--font-display);font-weight:600;font-size:16.5px;text-align:center;color:var(--ink);margin-bottom:6px;}
   .mom-doc .mom-date{text-align:center;font-family:var(--font-mono);font-size:12px;letter-spacing:0.04em;color:var(--ink-soft);margin-bottom:8px;}
@@ -321,6 +322,13 @@
     .wrap{max-width:100%;padding:0;margin:0;}
     .preview-doc-wrap{max-height:none;overflow:visible;border:none;}
     .mom-doc{padding:0;}
+    .mom-print-header{
+      display:flex;align-items:center;gap:10px;
+      border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:16px;
+      page-break-after:avoid;break-after:avoid-page;page-break-inside:avoid;break-inside:avoid;
+    }
+    .mom-print-header img{width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+    .mom-print-header span{font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--green-dark);}
 
     /* Keep each heading glued to the content that follows it, instead of
        being stranded alone at the bottom of a page. */
@@ -352,7 +360,7 @@
     .mom-attendee-card{page-break-inside:avoid;break-inside:avoid;}
 
     /* Signature block always stays intact on one page. */
-    .mom-sign{page-break-inside:avoid;break-inside:avoid;margin-top:40px;}
+    .mom-sign{page-break-inside:avoid;break-inside:avoid;margin-top:60px;}
   }
 </style>
 </head>
@@ -548,7 +556,13 @@ function renderCurrent(){
     </div>`
     : '';
 
+  const mastheadLogoEl = document.querySelector('.masthead-logo');
+  const printHeader = mastheadLogoEl
+    ? `<div class="mom-print-header"><img src="${mastheadLogoEl.src}" alt="Church logo"><span>The Greatest Love of Christ Church</span></div>`
+    : '';
+
   $('printArea').innerHTML = `
+    ${printHeader}
     <h1>MINUTES OF MEETING</h1>
     <div class="mom-title-line">${escapeHtml(m.title)}</div>
     <div class="mom-date">DATE: ${m.date ? fmtDate(m.date) : '—'}</div>
