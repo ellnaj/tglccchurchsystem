@@ -204,7 +204,7 @@
     .mom-doc{padding:20px 16px;}
     .mom-doc table{min-width:420px;}
   }
-  .mom-sign{margin-top:30px;text-align:center;width:180px;margin-left:auto;margin-right:auto;}
+  .mom-sign{margin-top:60px;text-align:center;width:180px;margin-left:auto;margin-right:auto;}
   .mom-sign .mom-sign-line{border-top:1px solid var(--line-strong);padding-top:4px;font-family:var(--font-body);font-size:12px;font-weight:600;color:var(--ink);}
   .mom-sign .mom-sign-cap{font-family:var(--font-body);font-size:10.5px;color:var(--ink-soft);}
   .mom-attendee-grid{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:6px;}
@@ -533,13 +533,20 @@ function renderCurrent(){
     : '';
 
   const attendeeNames = (m.attendees||[]).filter(Boolean).sort((a,b)=>a.localeCompare(b));
-  const attendeeGrid = attendeeNames.length
-    ? `<div class="mom-attendee-grid">${attendeeNames.map(name=>`
+  const attendeesSection = attendeeNames.length
+    ? `<h3>Ministry Leadership Attendees</h3>
+    <div class="mom-attendee-grid">${attendeeNames.map(name=>`
         <div class="mom-attendee-card">
           <div class="mom-att-avatar">${initials(name)}</div>
           <span class="mom-att-name">${escapeHtml(name)}</span>
         </div>`).join('')}</div>`
-    : `<p class="muted">No attendees recorded.</p>`;
+    : '';
+  const presiderSection = (m.presider && m.presider.trim())
+    ? `<div class="mom-sign">
+      <div class="mom-sign-line">${escapeHtml(m.presider)}</div>
+      <div class="mom-sign-cap">Presider</div>
+    </div>`
+    : '';
 
   $('printArea').innerHTML = `
     <h1>MINUTES OF MEETING</h1>
@@ -548,12 +555,8 @@ function renderCurrent(){
     <hr class="mom-rule">
     ${m.notes || '<p class="muted">No notes recorded.</p>'}
     ${actionItemsSection}
-    <h3>Ministry Leadership Attendees</h3>
-    ${attendeeGrid}
-    <div class="mom-sign">
-      <div class="mom-sign-line">${escapeHtml(m.presider) || '&nbsp;'}</div>
-      <div class="mom-sign-cap">Presider</div>
-    </div>
+    ${attendeesSection}
+    ${presiderSection}
   `;
 
   const docWrap = document.querySelector('.preview-doc-wrap');
