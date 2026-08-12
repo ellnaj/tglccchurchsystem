@@ -509,7 +509,7 @@
   .mom-doc table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:6px;}
   .mom-doc th, .mom-doc td{border:1px solid var(--line-strong);padding:6px 8px;text-align:left;}
   .mom-doc th{font-family:var(--font-display);font-weight:600;background:var(--paper);}
-  .mom-sign{margin-top:30px;text-align:center;width:180px;margin-left:auto;margin-right:auto;}
+  .mom-sign{margin-top:60px;text-align:center;width:180px;margin-left:auto;margin-right:auto;}
   .mom-sign .mom-sign-line{border-top:1px solid var(--line-strong);padding-top:4px;font-family:var(--font-body);font-size:12px;font-weight:600;color:var(--ink);}
   .mom-sign .mom-sign-cap{font-family:var(--font-body);font-size:10.5px;color:var(--ink-soft);}
 
@@ -4789,13 +4789,20 @@ function openMomPreview(id){
     : '';
   const attendees = members.filter(mm => (m.attendeeIds||[]).includes(mm.id) && mm.active !== false)
     .sort((a,b)=>(a.name||'').localeCompare(b.name||''));
-  const attendeeGrid = attendees.length
-    ? `<div class="mom-attendee-grid">${attendees.map(a=>`
+  const attendeesSection = attendees.length
+    ? `<h3>Ministry Leadership Attendees</h3>
+    <div class="mom-attendee-grid">${attendees.map(a=>`
         <div class="mom-attendee-card">
           <div class="mom-att-avatar">${initials(a.name)}</div>
           <span class="mom-att-name">${escapeHtml(a.name)}</span>
         </div>`).join('')}</div>`
-    : `<p class="muted">No attendees recorded.</p>`;
+    : '';
+  const presiderSection = (m.presider && m.presider.trim())
+    ? `<div class="mom-sign">
+      <div class="mom-sign-line">${escapeHtml(m.presider)}</div>
+      <div class="mom-sign-cap">Presider</div>
+    </div>`
+    : '';
 
   $('momPrintArea').innerHTML = `
     <h1>MINUTES OF MEETING</h1>
@@ -4804,12 +4811,8 @@ function openMomPreview(id){
     <hr class="mom-rule">
     ${m.notes || '<p class="muted">No notes recorded.</p>'}
     ${actionItemsSection}
-    <h3>Ministry Leadership Attendees</h3>
-    ${attendeeGrid}
-    <div class="mom-sign">
-      <div class="mom-sign-line">${escapeHtml(m.presider) || '&nbsp;'}</div>
-      <div class="mom-sign-cap">Presider</div>
-    </div>
+    ${attendeesSection}
+    ${presiderSection}
   `;
   $('momPreviewOverlay').classList.add('open');
   loadAndRenderMomComments(m.id);
