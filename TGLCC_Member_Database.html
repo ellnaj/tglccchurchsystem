@@ -509,7 +509,7 @@
   .mom-doc table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:6px;}
   .mom-doc th, .mom-doc td{border:1px solid var(--line-strong);padding:6px 8px;text-align:left;}
   .mom-doc th{font-family:var(--font-display);font-weight:600;background:var(--paper);}
-  .mom-sign{margin-top:30px;text-align:center;width:180px;}
+  .mom-sign{margin-top:30px;text-align:center;width:180px;margin-left:auto;margin-right:auto;}
   .mom-sign .mom-sign-line{border-top:1px solid var(--line-strong);padding-top:4px;font-family:var(--font-body);font-size:12px;font-weight:600;color:var(--ink);}
   .mom-sign .mom-sign-cap{font-family:var(--font-body);font-size:10.5px;color:var(--ink-soft);}
 
@@ -1626,6 +1626,7 @@
       <button class="btn btn-primary" id="addMomBtn" onclick="openMomForm()">+ New Meeting</button>
       <input class="search" id="searchBoxMom" type="text" placeholder="Search title, presider or date" oninput="renderMOM()">
       <select class="filter" id="momYearFilter" onchange="renderMOM()"><option value="">All Years</option></select>
+      <a class="btn" href="TGLCC_MOM_Viewer.html" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;" title="Open the public Minutes of Meeting Viewer in a new tab">MOM Viewer ↗</a>
     </div>
     <div class="roster-wrap">
       <table>
