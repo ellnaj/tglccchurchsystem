@@ -2038,8 +2038,13 @@ async function upsertMembersBatch(memberList){
 // Delete exactly ONE member row. Only ever called from deleteMember(),
 // after the user has explicitly clicked Delete and confirmed the prompt.
 async function deleteMemberRow(id){
-  const { error } = await supabaseClient.from('members').delete().eq('id', id);
+  // .select() lets us see whether a row was actually removed. A DELETE that
+  // matches 0 rows (e.g. blocked by a Row Level Security policy on
+  // "members") still returns error === null, so without this check a
+  // blocked delete would look identical to a successful one.
+  const { data, error } = await supabaseClient.from('members').delete().eq('id', id).select();
   if(error) throw error;
+  if(!data || !data.length) throw new Error('No row was deleted (likely blocked by a Supabase RLS policy on "members")');
 }
 
 // Save exactly one member: cache locally, then write only that member's
@@ -2155,8 +2160,11 @@ async function upsertTrainingRow(training){
   if(error) throw error;
 }
 async function deleteTrainingRow(id){
-  const { error } = await supabaseClient.from('trainings').delete().eq('id', id);
+  // Same RLS gotcha as deleteMemberRow above: a blocked delete still comes
+  // back with error === null, so verify a row was actually removed.
+  const { data, error } = await supabaseClient.from('trainings').delete().eq('id', id).select();
   if(error) throw error;
+  if(!data || !data.length) throw new Error('No row was deleted (likely blocked by a Supabase RLS policy on "trainings")');
 }
 async function saveOneTraining(training){
   cacheTrainingsLocally();
@@ -2288,7 +2296,12 @@ async function deleteOneMom(id){
   cacheMomLocally();
   try{
     await supabaseClient.from('meeting_attendance').delete().eq('meeting_id', id);
-    await supabaseClient.from('meeting_minutes').delete().eq('id', id);
+    // .select() lets us confirm the meeting_minutes row itself was actually
+    // removed — a delete blocked by RLS still returns error === null, so
+    // without this check it would look identical to a successful delete.
+    const { data, error } = await supabaseClient.from('meeting_minutes').delete().eq('id', id).select();
+    if(error) throw error;
+    if(!data || !data.length) throw new Error('No row was deleted (likely blocked by a Supabase RLS policy on "meeting_minutes")');
   }catch(e){
     console.error('Supabase MOM delete failed:', e);
     toast('⚠ Deleted locally, but Supabase delete failed — check your connection');
@@ -4898,8 +4911,17 @@ async function deleteMomComment(commentId){
   if(!isAdminRole()) return;
   if(!confirm('Delete this comment? This cannot be undone.')) return;
   try{
-    const { error } = await supabaseClient.from('meeting_comments').delete().eq('id', commentId);
+    // .select() makes Supabase return the row(s) it actually deleted. Without
+    // it, a DELETE that matches 0 rows (e.g. blocked by a Row Level Security
+    // policy on meeting_comments) still comes back with error === null, so the
+    // old code would show "Comment deleted" even though nothing was removed —
+    // which is exactly what made this look broken.
+    const { data, error } = await supabaseClient.from('meeting_comments').delete().eq('id', commentId).select();
     if(error) throw error;
+    if(!data || !data.length){
+      toast('⚠ Comment was not deleted — check the delete permission (RLS policy) on meeting_comments in Supabase');
+      return;
+    }
     toast('Comment deleted');
     loadAndRenderMomComments(momCommentsMeetingId);
   }catch(e){
@@ -6253,8 +6275,15 @@ async function deleteLoginActivityRow(id){
   if(!isAdminRole()) return;
   if(!confirm('Delete this login activity entry? This cannot be undone.')) return;
   try{
-    const { error } = await supabaseClient.from('login_logs').delete().eq('id', id);
+    // .select() confirms a row was actually removed — a delete blocked by
+    // RLS still returns error === null, so without this check a blocked
+    // delete would look identical to a successful one.
+    const { data, error } = await supabaseClient.from('login_logs').delete().eq('id', id).select();
     if(error) throw error;
+    if(!data || !data.length){
+      toast('⚠ Entry was not deleted — check the delete permission (RLS policy) on login_logs in Supabase');
+      return;
+    }
     toast('Login activity entry deleted');
     await loadLoginActivity();
   }catch(e){
