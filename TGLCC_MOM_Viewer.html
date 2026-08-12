@@ -34,6 +34,9 @@
     -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;
   }
   button, a, input, select, textarea{touch-action:manipulation;}
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{
+    outline:2px solid var(--green);outline-offset:2px;border-radius:6px;
+  }
   .wrap{max-width:840px;margin:0 auto;padding:28px 20px 60px;}
   @media(max-width:900px){
     .wrap{padding:22px 16px 48px;}
@@ -45,7 +48,10 @@
     border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:14px;
   }
   .masthead-left{display:flex;align-items:center;gap:12px;}
-  .masthead-logo{width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+  .masthead-logo{
+    width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;
+    box-shadow:0 0 0 2px var(--surface), 0 0 0 3px var(--line-strong), 0 2px 5px rgba(41,38,32,.15);
+  }
   .church-name{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--green-dark);margin:0 0 2px;}
   .masthead h1{font-family:var(--font-display);font-weight:600;font-size:23px;margin:1px 0 0;letter-spacing:-0.01em;line-height:1.15;}
   .masthead-right{margin-left:auto;}
@@ -54,9 +60,11 @@
     background:var(--green);border:1px solid var(--green);color:#fff;font-family:var(--font-body);
     font-size:13.5px;font-weight:700;text-decoration:none;white-space:nowrap;
     box-shadow:0 2px 6px rgba(63,82,182,0.35);cursor:pointer;
+    transition:background .15s, border-color .15s, box-shadow .15s, transform .15s;
   }
   .btn-admin-link svg{width:16px;height:16px;flex-shrink:0;}
-  .btn-admin-link:hover{background:var(--green-dark);border-color:var(--green-dark);}
+  .btn-admin-link:hover{background:var(--green-dark);border-color:var(--green-dark);box-shadow:0 4px 10px rgba(38,47,112,.32);transform:translateY(-1px);}
+  .btn-admin-link:active{transform:translateY(0);}
   .intro-note{
     background:var(--green-tint);border:1px solid var(--line-strong);border-radius:var(--radius);
     padding:10px 14px;font-size:13.5px;color:var(--green-dark);font-weight:600;
@@ -90,16 +98,17 @@
   .toolbar{
     display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:14px 0 14px;
     background:var(--surface);border:1px solid var(--line-strong);border-radius:12px;
-    padding:6px;box-shadow:0 1px 3px rgba(41,38,32,.06);
+    padding:6px;box-shadow:0 2px 6px rgba(41,38,32,.07);
   }
   .btn-print{
     display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:8px;
     border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);
     font-family:var(--font-body);font-size:13.5px;font-weight:700;cursor:pointer;white-space:nowrap;
-    min-height:44px;flex-shrink:0;
+    min-height:44px;flex-shrink:0;transition:background .15s, border-color .15s, box-shadow .15s, transform .15s;
   }
   .btn-print svg{width:16px;height:16px;flex-shrink:0;color:var(--green-dark);}
-  .btn-print:hover:not(:disabled){background:var(--green-tint);border-color:var(--green);}
+  .btn-print:hover:not(:disabled){background:var(--green-tint);border-color:var(--green);box-shadow:0 2px 6px rgba(63,82,182,.15);transform:translateY(-1px);}
+  .btn-print:active:not(:disabled){transform:translateY(0);}
   .btn-print:disabled{opacity:.45;cursor:not-allowed;}
   .search-wrap{position:relative;flex:1;min-width:180px;}
   .search-wrap svg{
@@ -109,9 +118,9 @@
   .search{
     width:100%;padding:9px 12px 9px 36px;border:1px solid var(--line-strong);
     border-radius:8px;background:var(--surface);font-family:var(--font-body);font-size:16px;color:var(--ink);
-    min-height:44px;
+    min-height:44px;transition:border-color .15s, box-shadow .15s;
   }
-  .search:focus{outline:none;border-color:var(--green);}
+  .search:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px var(--green-tint);}
   .select-wrap{position:relative;flex-shrink:0;}
   .select-wrap svg{
     position:absolute;right:10px;top:50%;transform:translateY(-50%);
@@ -121,9 +130,9 @@
     -webkit-appearance:none;appearance:none;
     padding:9px 30px 9px 12px;border:1px solid var(--line-strong);border-radius:8px;
     background:var(--surface);font-family:var(--font-body);font-size:16px;color:var(--ink);
-    min-height:44px;cursor:pointer;
+    min-height:44px;cursor:pointer;transition:border-color .15s, box-shadow .15s;
   }
-  select.filter:focus{outline:none;border-color:var(--green);}
+  select.filter:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px var(--green-tint);}
   @media(max-width:640px){
     .toolbar{gap:6px;padding:6px;}
     .btn-print{flex:1 1 100%;justify-content:center;order:1;}
@@ -172,13 +181,16 @@
   }
   .mom-preview-modal{
     max-width:760px;margin:0 auto;max-height:none;background:var(--surface);
-    border-radius:var(--radius);box-shadow:0 10px 40px rgba(0,0,0,.25);
+    border-radius:var(--radius);box-shadow:0 20px 50px -12px rgba(41,38,32,.35), 0 8px 20px rgba(41,38,32,.15);
   }
   .mom-doc{background:#fff;padding:26px 24px;font-family:var(--font-body);color:var(--ink);border-radius:var(--radius) var(--radius) 0 0;}
   .mom-doc h1{font-family:var(--font-display);font-weight:700;font-size:23px;text-align:center;letter-spacing:0.09em;margin:0 0 8px;color:var(--green-dark);}
   .mom-doc .mom-title-line{font-family:var(--font-display);font-weight:600;font-size:16.5px;text-align:center;color:var(--ink);margin-bottom:6px;}
   .mom-doc .mom-date{text-align:center;font-family:var(--font-mono);font-size:12px;letter-spacing:0.04em;color:var(--ink-soft);margin-bottom:8px;}
-  .mom-doc .mom-rule{border:none;border-top:2px solid var(--gold);width:56px;margin:0 auto 22px;}
+  .mom-doc .mom-rule{
+    border:none;height:2px;width:64px;margin:0 auto 22px;border-radius:2px;
+    background:linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
   .mom-doc h3{font-family:var(--font-display);font-weight:600;font-size:12.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--green-dark);margin:24px 0 10px;border-bottom:1px solid var(--line-strong);padding-bottom:5px;}
   .mom-doc p{margin:0 0 8px;font-size:13.5px;line-height:1.6;}
   .mom-doc ul, .mom-doc ol{margin:0 0 8px;padding-left:22px;font-size:13.5px;line-height:1.6;}
@@ -195,13 +207,14 @@
   .mom-sign{margin-top:30px;text-align:center;width:180px;margin-left:auto;margin-right:auto;}
   .mom-sign .mom-sign-line{border-top:1px solid var(--line-strong);padding-top:4px;font-family:var(--font-body);font-size:12px;font-weight:600;color:var(--ink);}
   .mom-sign .mom-sign-cap{font-family:var(--font-body);font-size:10.5px;color:var(--ink-soft);}
-  .mom-attendee-grid{display:flex;flex-wrap:wrap;gap:6px;}
+  .mom-attendee-grid{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:6px;}
   .mom-attendee-card{
     display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-strong);border-radius:20px;
     padding:4px 10px 4px 4px;background:var(--paper);
   }
   .mom-att-avatar{
-    width:22px;height:22px;border-radius:50%;background:var(--green);color:#fff;font-size:10px;font-weight:700;
+    width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg, var(--green), var(--green-dark));
+    color:#fff;font-size:10px;font-weight:700;box-shadow:0 1px 2px rgba(38,47,112,.25);
     display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--font-body);
   }
   .mom-att-name{font-size:12px;font-weight:600;color:var(--ink);}
@@ -213,7 +226,7 @@
   .btn-close{
     padding:9px 18px;border-radius:var(--radius);border:1px solid var(--line-strong);
     background:var(--surface);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font-body);
-    min-height:44px;
+    min-height:44px;transition:background .15s;
   }
   .btn-close:hover{background:var(--paper);}
 
@@ -225,9 +238,10 @@
   .btn-nav{
     padding:9px 16px;border-radius:var(--radius);border:1px solid var(--line-strong);
     background:var(--surface);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font-body);
-    min-height:44px;
+    min-height:44px;transition:background .15s, border-color .15s, transform .15s;
   }
-  .btn-nav:hover:not(:disabled){background:var(--paper);border-color:var(--green);}
+  .btn-nav:hover:not(:disabled){background:var(--paper);border-color:var(--green);transform:translateY(-1px);}
+  .btn-nav:active:not(:disabled){transform:translateY(0);}
   .btn-nav:disabled{opacity:.4;cursor:not-allowed;}
   .preview-nav-count{font-family:var(--font-mono);font-size:12px;color:var(--ink-soft);white-space:nowrap;}
   .preview-doc-wrap{
@@ -241,7 +255,7 @@
   /* ---- comments / corrections ---- */
   .comments-section{
     margin-top:16px;background:var(--surface);border:1px solid var(--line-strong);border-radius:var(--radius);
-    padding:18px 20px;
+    padding:18px 20px;box-shadow:0 1px 3px rgba(41,38,32,.05);
   }
   .comments-title{
     font-family:var(--font-display);font-weight:600;font-size:14px;letter-spacing:0.04em;text-transform:uppercase;
@@ -272,9 +286,10 @@
   .btn-comment{
     align-self:flex-end;padding:9px 18px;border-radius:var(--radius);border:1px solid var(--green);
     background:var(--green);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font-body);
-    min-height:44px;
+    min-height:44px;transition:background .15s, border-color .15s, box-shadow .15s, transform .15s;
   }
-  .btn-comment:hover{background:var(--green-dark);border-color:var(--green-dark);}
+  .btn-comment:hover{background:var(--green-dark);border-color:var(--green-dark);box-shadow:0 3px 8px rgba(38,47,112,.25);transform:translateY(-1px);}
+  .btn-comment:active{transform:translateY(0);}
   .btn-comment-sm{padding:7px 14px;font-size:13px;min-height:40px;}
   @media(max-width:640px){
     .preview-doc-wrap{max-height:56vh;}
@@ -287,13 +302,57 @@
 
   /* ---- print / save as PDF (isolates just the meeting document) ---- */
   @media print{
-    body{background:#fff;}
-    .masthead-right, .intro-note, .sticky-controls, .app-footer,
+    @page{
+      size: A4 portrait;
+      margin: 16mm 15mm 18mm;
+    }
+    html, body{background:#fff;}
+    body{font-size:12px;}
+    /* Make sure text/border colors (headings, gold rule, table header
+       shading) come through in the printed/PDF output instead of being
+       silently dropped, which is the default browser behavior for print. */
+    *{
+      -webkit-print-color-adjust:exact;
+      print-color-adjust:exact;
+      color-adjust:exact;
+    }
+    .masthead, .masthead-right, .intro-note, .sticky-controls, .app-footer,
     .comments-section, .preview-nav{display:none !important;}
-    .wrap{max-width:100%;padding:0;}
-    .masthead{border-bottom:2px solid #000;margin-bottom:14px;padding-bottom:10px;}
+    .wrap{max-width:100%;padding:0;margin:0;}
     .preview-doc-wrap{max-height:none;overflow:visible;border:none;}
     .mom-doc{padding:0;}
+
+    /* Keep each heading glued to the content that follows it, instead of
+       being stranded alone at the bottom of a page. */
+    .mom-doc h1, .mom-doc .mom-title-line, .mom-doc .mom-date, .mom-doc h3{
+      page-break-after:avoid;break-after:avoid-page;
+      page-break-inside:avoid;break-inside:avoid;
+    }
+    .mom-doc .mom-rule{page-break-after:avoid;break-after:avoid-page;}
+
+    /* Never split a paragraph or list item across a page boundary, and
+       keep a sensible minimum of lines together if it must wrap. */
+    .mom-doc p, .mom-doc li{
+      orphans:3;widows:3;
+      page-break-inside:avoid;break-inside:avoid;
+    }
+
+    /* Tables: repeat the header row on every page the table spans, and
+       never split a single row across two pages. The table itself is
+       still allowed to break between rows. */
+    .table-scroll{overflow:visible;}
+    .mom-doc table{min-width:0 !important;width:100%;page-break-inside:auto;break-inside:auto;}
+    .mom-doc thead{display:table-header-group;}
+    .mom-doc tfoot{display:table-footer-group;}
+    .mom-doc tr{page-break-inside:avoid;break-inside:avoid;}
+
+    /* Attendee list: the grid as a whole may flow across pages, but never
+       cut a single attendee card in half. */
+    .mom-attendee-grid{page-break-inside:auto;}
+    .mom-attendee-card{page-break-inside:avoid;break-inside:avoid;}
+
+    /* Signature block always stays intact on one page. */
+    .mom-sign{page-break-inside:avoid;break-inside:avoid;margin-top:40px;}
   }
 </style>
 </head>
