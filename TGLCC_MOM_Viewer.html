@@ -205,6 +205,9 @@
     .mom-doc{padding:20px 16px;}
     .mom-doc table{min-width:420px;}
   }
+  @media print{
+    .modal-overlay{display:none !important;}
+  }
   .mom-sign{margin-top:60px;text-align:center;width:180px;margin-left:auto;margin-right:auto;}
   .mom-sign .mom-sign-line{border-top:1px solid var(--line-strong);padding-top:4px;font-family:var(--font-body);font-size:12px;font-weight:600;color:var(--ink);}
   .mom-sign .mom-sign-cap{font-family:var(--font-body);font-size:10.5px;color:var(--ink-soft);}
@@ -390,6 +393,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         Print / Save PDF
       </button>
+      <button type="button" class="btn-print" id="fullViewBtn" onclick="openFullView()" title="Open this meeting in a full floating view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+        Full View
+      </button>
       <div class="search-wrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
         <input class="search" id="searchBox" type="text" placeholder="Search title, presider or date" oninput="onFiltersChanged()">
@@ -410,6 +417,15 @@
   <div id="listArea"><div class="loading-state">Loading meeting minutes…</div></div>
 
   <div class="app-footer">&copy; 2026 The Greatest Love of Christ Church. All Rights Reserved.<br>Developed by Lemuel Yrigan.</div>
+</div>
+
+<div class="modal-overlay" id="fullViewOverlay" onclick="if(event.target===this) closeFullView();">
+  <div class="mom-preview-modal">
+    <div class="mom-doc" id="fullViewDoc"></div>
+    <div class="modal-close-bar">
+      <button type="button" class="btn-close" onclick="closeFullView()">Close</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -729,6 +745,50 @@ function nextMeeting(){
     renderCurrent();
   }
 }
+
+function openFullView(){
+  if(!filteredList.length || !$('printArea')){
+    alert('No meeting minutes to view yet.');
+    return;
+  }
+  syncFullView();
+  $('fullViewOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeFullView(){
+  const overlay = $('fullViewOverlay');
+  if(overlay) overlay.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function syncFullView(){
+  const overlay = $('fullViewOverlay');
+  const src = $('printArea');
+  const dest = $('fullViewDoc');
+  if(!overlay || !src || !dest) return;
+  dest.innerHTML = src.innerHTML;
+}
+
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){
+    const overlay = $('fullViewOverlay');
+    if(overlay && overlay.classList.contains('open')) closeFullView();
+  }
+});
+
+// Keep the floating full-view in sync whenever the current meeting document
+// changes (e.g. via Prev/Next navigation) without altering any existing
+// rendering functions.
+(function(){
+  const watchTarget = document.getElementById('listArea');
+  if(!watchTarget || typeof MutationObserver === 'undefined') return;
+  const fullViewSyncObserver = new MutationObserver(function(){
+    const overlay = $('fullViewOverlay');
+    if(overlay && overlay.classList.contains('open')) syncFullView();
+  });
+  fullViewSyncObserver.observe(watchTarget, { childList:true, subtree:true });
+})();
 
 loadMOM();
 </script>
