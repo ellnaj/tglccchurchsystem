@@ -495,7 +495,10 @@ function populateFilters(){
   const yearSel = $('yearFilter');
   const prevYear = yearSel.value;
   const years = Array.from(new Set(momList.map(m=>(m.date||'').slice(0,4)).filter(Boolean))).sort((a,b)=>b.localeCompare(a));
-  yearSel.innerHTML = '<option value="">All Years</option>' + years.map(y=>`<option value="${y}" ${y===prevYear?'selected':''}>${y}</option>`).join('');
+  const currentYear = String(new Date().getFullYear());
+  const defaultYear = (!yearSel.dataset.initialized && years.includes(currentYear)) ? currentYear : prevYear;
+  yearSel.innerHTML = '<option value="">All Years</option>' + years.map(y=>`<option value="${y}" ${y===defaultYear?'selected':''}>${y}</option>`).join('');
+  yearSel.dataset.initialized = '1';
 }
 
 function onFiltersChanged(){
