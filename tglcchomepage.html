@@ -343,12 +343,15 @@
   }
   .friday-table thead th.fr-col-num{width:34px;}
   .friday-table thead th.fr-col-count{text-align:right;}
+  .friday-table thead th.fr-col-new{text-align:right;width:110px;}
   .friday-table thead th.fr-col-trend{text-align:right;width:90px;}
   .friday-table tbody td{
     padding:11px 10px;font-size:13.5px;color:var(--ink);border-bottom:1px solid var(--line);vertical-align:middle;
     font-family:var(--font-mono);
   }
   .friday-table tbody td.fr-col-count{text-align:right;font-weight:600;color:var(--green-dark);}
+  .friday-table tbody td.fr-col-new{text-align:right;color:var(--gold);}
+  .friday-table tbody td.fr-col-new.is-zero{color:var(--ink-faint);}
   .friday-table tbody td.fr-col-trend{text-align:right;font-size:12px;}
   .friday-table tbody tr:last-child td{border-bottom:none;}
   .friday-table tbody tr:hover td{background:var(--green-tint);}
@@ -846,11 +849,12 @@
               <th class="fr-col-num">#</th>
               <th>Week Ending (Friday)</th>
               <th class="fr-col-count">Weekly Total</th>
+              <th class="fr-col-new">New Members</th>
               <th class="fr-col-trend">Trend</th>
             </tr>
           </thead>
           <tbody id="fridayTableBody">
-            <tr><td colspan="4"><div class="analytics-empty">Loading weekly attendance…</div></td></tr>
+            <tr><td colspan="5"><div class="analytics-empty">Loading weekly attendance…</div></td></tr>
           </tbody>
         </table>
       </div>
@@ -875,6 +879,16 @@
         </div>
       </div>
       <div class="analytics-status" id="analyticsStatus">Loading live data…</div>
+    </div>
+
+    <div class="analytics-panel reveal">
+      <div class="analytics-head">
+        <h3>New Members by Month</h3>
+        <select id="newMembersYearSelect"></select>
+      </div>
+      <p class="analytics-sub">Members whose "Started Attending" date falls in each month of the selected year.</p>
+      <div id="newMembersMonthChart" class="bar-chart"></div>
+      <div class="analytics-status" id="newMembersStatus">Loading live data…</div>
     </div>
   </div>
 </section>
@@ -1112,11 +1126,14 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+let memberRecords = [];
+
 async function loadMemberStats(){
   try{
-    const { data, error } = await supabaseClient.from('members').select('active,worker,leader');
+    const { data, error } = await supabaseClient.from('members').select('active,worker,leader,started_attending');
     if(error) throw error;
     const rows = data || [];
+    memberRecords = rows;
     const active = rows.filter(m => m.active !== false);
     const workers = active.filter(m => m.worker).length;
     const leaders = active.filter(m => m.leader).length;
@@ -1125,11 +1142,18 @@ async function loadMemberStats(){
     document.getElementById('statLeaders').textContent = leaders;
     document.getElementById('aboutTotal').textContent = rows.length;
     document.getElementById('aboutActive').textContent = active.length;
+    // Member data may finish loading after or before the attendance data —
+    // refresh anything that depends on both, whichever order they land in.
+    buildNewMembersYearSelect();
+    renderNewMembersByMonth();
+    renderFridayReport();
   }catch(e){
     console.error('Failed to load member stats:', e);
     ['statActiveMembers','statWorkers','statLeaders','aboutTotal','aboutActive'].forEach(id=>{
       document.getElementById(id).textContent = '—';
     });
+    document.getElementById('newMembersMonthChart').innerHTML = '<div class="analytics-empty">Could not load member data.</div>';
+    document.getElementById('newMembersStatus').textContent = 'Connection error — showing no data.';
   }
 }
 
@@ -1154,7 +1178,7 @@ async function loadAttendance(){
     document.getElementById('monthChart').innerHTML = '<div class="analytics-empty">Could not load attendance data.</div>';
     document.getElementById('yearChart').innerHTML = '<div class="analytics-empty">Could not load attendance data.</div>';
     document.getElementById('analyticsStatus').textContent = 'Connection error — showing no data.';
-    document.getElementById('fridayTableBody').innerHTML = '<tr><td colspan="4"><div class="analytics-empty">Could not load attendance data.</div></td></tr>';
+    document.getElementById('fridayTableBody').innerHTML = '<tr><td colspan="5"><div class="analytics-empty">Could not load attendance data.</div></td></tr>';
     document.getElementById('fridayStatus').textContent = 'Connection error — showing no data.';
   }
 }
@@ -1185,7 +1209,9 @@ function dateStrAddDays(dateStr, days){
    that Friday (i.e. Saturday through Friday) — not just records dated
    that exact Friday — and report that weekly total on the Friday's row.
    So if a member's attendance was logged on any day that week (Sat-Thu),
-   it's automatically folded into that week's Friday total. */
+   it's automatically folded into that week's Friday total. Also counts,
+   for that same Saturday-through-Friday window, how many members have a
+   "Started Attending" date inside it — i.e. new members that week. */
 function getFridayCounts(year, month){
   // Identify which Fridays to show, filtered by the selected year/month
   const fridaySet = new Set();
@@ -1205,7 +1231,13 @@ function getFridayCounts(year, month){
       if(!date) return;
       if(date >= weekStart && date <= friday) total++;
     });
-    return [friday, total];
+    let newMembers = 0;
+    memberRecords.forEach(m => {
+      const started = m.started_attending;
+      if(!started) return;
+      if(started >= weekStart && started <= friday) newMembers++;
+    });
+    return [friday, total, newMembers];
   });
 
   // Sort by date descending (most recent Friday first)
@@ -1247,13 +1279,13 @@ function renderFridayReport(){
   const status = document.getElementById('fridayStatus');
 
   if(!rows.length){
-    tbody.innerHTML = '<tr><td colspan="4"><div class="analytics-empty">No weekly attendance records found.</div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5"><div class="analytics-empty">No weekly attendance records found.</div></td></tr>';
     status.textContent = 'No weekly attendance records yet.';
     return;
   }
 
   // Table rows, most recent week first, with week-over-week trend vs the prior week's total
-  tbody.innerHTML = rows.map(([date, count], i) => {
+  tbody.innerHTML = rows.map(([date, count, newMembers], i) => {
     const d = new Date(date + 'T00:00:00');
     const label = d.toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
     let trendHtml = '<span class="fr-trend-flat">—</span>';
@@ -1264,7 +1296,7 @@ function renderFridayReport(){
       else if(diff < 0) trendHtml = `<span class="fr-trend-down">▼ ${Math.abs(diff)}</span>`;
       else trendHtml = '<span class="fr-trend-flat">— 0</span>';
     }
-    return `<tr><td class="fr-col-num">${i+1}</td><td>${label}</td><td class="fr-col-count">${count}</td><td class="fr-col-trend">${trendHtml}</td></tr>`;
+    return `<tr><td class="fr-col-num">${i+1}</td><td>${label}</td><td class="fr-col-count">${count}</td><td class="fr-col-new ${newMembers ? '' : 'is-zero'}">${newMembers || 0}</td><td class="fr-col-trend">${trendHtml}</td></tr>`;
   }).join('');
 
   status.textContent = `${rows.length} week${rows.length===1?'':'s'} of attendance recorded — live data from the church database.`;
@@ -1324,6 +1356,54 @@ function renderYearChart(){
       <span class="track"><span class="fill" style="width:${(byYear[y]/max)*100}%"></span></span>
       <span class="n">${byYear[y]}</span>
     </div>`).join('');
+}
+
+/* ---- new members by month ----
+   Counts, for the selected year, how many members have a "Started
+   Attending" date falling in each calendar month — a simple monthly
+   growth trend independent of the attendance-check-in charts above. */
+function buildNewMembersYearSelect(){
+  const sel = document.getElementById('newMembersYearSelect');
+  if(!sel) return;
+  const years = Array.from(new Set(
+    memberRecords.filter(m => m.started_attending).map(m => m.started_attending.slice(0,4))
+  )).sort().reverse();
+  const currentYear = String(new Date().getFullYear());
+  if(!years.includes(currentYear)) years.unshift(currentYear);
+  const prevValue = sel.value;
+  sel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+  sel.value = years.includes(prevValue) ? prevValue : (years.includes(currentYear) ? currentYear : years[0]);
+  sel.onchange = renderNewMembersByMonth;
+}
+
+function renderNewMembersByMonth(){
+  const sel = document.getElementById('newMembersYearSelect');
+  const el = document.getElementById('newMembersMonthChart');
+  const status = document.getElementById('newMembersStatus');
+  if(!sel || !el) return;
+  const year = sel.value || String(new Date().getFullYear());
+  const counts = new Array(12).fill(0);
+  memberRecords.forEach(m => {
+    const started = m.started_attending;
+    if(started && started.slice(0,4) === year){
+      const mo = parseInt(started.slice(5,7), 10) - 1;
+      if(mo >= 0 && mo < 12) counts[mo]++;
+    }
+  });
+  const total = counts.reduce((a,b) => a+b, 0);
+  if(!memberRecords.some(m => m.started_attending)){
+    el.innerHTML = '<div class="analytics-empty">No "Started Attending" dates on file yet.</div>';
+    if(status) status.textContent = 'No member start dates recorded yet.';
+    return;
+  }
+  const max = Math.max(...counts, 1);
+  el.innerHTML = counts.map((c,i) => `
+    <div class="bar-col">
+      <div class="bar-val">${c || ''}</div>
+      <div class="bar" style="height:${Math.max((c/max)*100, c>0?4:0)}%"></div>
+      <div class="bar-label">${MONTH_LABELS[i]}</div>
+    </div>`).join('');
+  if(status) status.textContent = `${total} new member${total===1?'':'s'} started attending in ${year} — live data from the church database.`;
 }
 
 /* ---- training ---- */

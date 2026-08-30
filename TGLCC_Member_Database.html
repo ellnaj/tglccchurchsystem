@@ -62,22 +62,19 @@
   .masthead .sub{font-size:12px;color:var(--ink-soft);font-family:var(--font-mono);letter-spacing:0.02em;}
   .masthead-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:flex-end;margin-left:auto;}
 
-  /* tab strip - ledger divider style */
+  /* tab strip - ledger divider style, stretched edge-to-edge across the bar */
   .tabs{
-    display:flex;gap:2px;margin-bottom:20px;
-    overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
-    scrollbar-width:thin;
+    display:flex;flex-wrap:wrap;width:100%;gap:0;margin-bottom:20px;
   }
-  .tabs::-webkit-scrollbar{height:4px;}
-  .tabs::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:4px;}
   .tab-btn{
-    font-family:var(--font-body);font-size:14px;font-weight:600;color:var(--ink-soft);
+    font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--ink-soft);
     background:transparent;border:none;border-bottom:3px solid transparent;
-    padding:9px 4px;margin-right:22px;cursor:pointer;flex-shrink:0;white-space:nowrap;
+    padding:9px 4px;margin:0;cursor:pointer;white-space:nowrap;
+    flex:1 1 0;min-width:0;text-align:center;
   }
   .tab-btn.active{color:var(--green-dark);border-bottom-color:var(--green);}
   .tab-btn .count{
-    font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);margin-left:6px;
+    font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);margin-left:4px;
   }
   .subtabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
   .subtab-btn{
@@ -912,7 +909,7 @@
 
     /* tabs */
     .tabs{margin-bottom:16px;padding-bottom:2px;}
-    .tab-btn{font-size:13.5px;padding:10px 4px;margin-right:16px;}
+    .tab-btn{font-size:12px;padding:8px 2px;flex-basis:20%;}
     .subtab-btn{padding:8px 14px;font-size:13px;}
 
     /* toolbar: search full width first, then buttons/selects flow evenly */
@@ -1011,6 +1008,9 @@
     .masthead h1{font-size:15.5px;}
     .toolbar .btn, .toolbar select.filter{flex:1 1 100%;}
     .celeb-page-label{font-size:9px;}
+    /* tab bar: wrap onto extra rows, each row still stretching edge-to-edge,
+       so every tab name stays fully visible on screen */
+    .tab-btn{flex-basis:33%;font-size:11.5px;padding:7px 2px;}
   }
 
   /* touch devices: remove hover-only affordances that can stick after tap */
@@ -1236,6 +1236,7 @@
 
   <div class="tabs">
     <button class="tab-btn active" data-tab="roster" onclick="setTab('roster')">Active <span class="count" id="rosterCount"></span></button>
+    <button class="tab-btn" data-tab="newmembers" onclick="setTab('newmembers')">New <span class="count" id="newMemberCount"></span></button>
     <button class="tab-btn" data-tab="inactive" onclick="setTab('inactive')">Inactive <span class="count" id="inactiveCount"></span></button>
     <button class="tab-btn" data-tab="attendance" onclick="setTab('attendance')">Attendance <span class="count" id="attendanceLogCount"></span></button>
     <button class="tab-btn" data-tab="workers" onclick="setTab('workers')">Milestones<span class="count" id="workerCount"></span></button>
@@ -1325,6 +1326,59 @@
       <div class="empty-state" id="inactiveEmptyState" style="display:none;">
         <h3>No inactive members</h3>
         <div>Members marked inactive will appear here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEW MEMBERS VIEW (recent joiners, promoted to Regular once they hit the attendance milestone) -->
+  <div id="view-newmembers" style="display:none;">
+    <div class="toolbar">
+      <input class="search" id="searchBoxNewMembers" type="text" placeholder="Search new members" oninput="renderNewMembers()">
+    </div>
+    <div class="hint" style="margin-top:-6px;">
+      New members land here automatically based on their <b>Started Attending</b> date (within the last <span id="newMemberWindowLabel"></span>). Once a member reaches
+      <b id="newMemberThresholdLabel"></b> recorded attendances, a <b>Transfer to Regular Member</b> button appears — click it to move them out of this list for good.
+    </div>
+
+    <div class="stat-strip">
+      <div class="stat">New members <b id="statNewMembersTotal">0</b></div>
+      <div class="stat">Ready to transfer <b id="statNewMembersReady">0</b></div>
+      <div class="stat stat-clickable" onclick="openNewAttendeesBreakdown('week')" title="Click to see who's new this week">New this week <b id="statNewAttendeesThisWeek">0</b></div>
+      <div class="stat stat-clickable" onclick="openNewAttendeesBreakdown('month')" title="Click to see who's new this month">New this month <b id="statNewAttendeesThisMonth">0</b></div>
+    </div>
+
+    <div class="roster-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>No.</th>
+            <th>Name</th>
+            <th>Started Attending</th>
+            <th>Time as New Member</th>
+            <th>Attendance</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="newMembersBody"></tbody>
+      </table>
+      <div class="empty-state" id="newMembersEmptyState" style="display:none;">
+        <h3>No new members right now</h3>
+        <div>Members show up here automatically once their "Started Attending" date is recent.</div>
+      </div>
+    </div>
+
+    <!-- REPORT: how many new attendees (by "Started Attending" date) joined each of the last 8 service weeks and last 6 months -->
+    <div class="att-grid-2">
+      <div class="att-panel">
+        <div class="att-panel-head"><h3>New attendees per week</h3></div>
+        <div class="hint" style="margin:-4px 0 10px;">Counted by each member's Started Attending date, grouped into the last 8 service weeks (Saturday–Friday).</div>
+        <div id="newAttendeesWeeklyBars"></div>
+      </div>
+      <div class="att-panel">
+        <div class="att-panel-head"><h3>New attendees per month</h3></div>
+        <div class="hint" style="margin:-4px 0 10px;">Counted by each member's Started Attending date, grouped into the last 6 calendar months.</div>
+        <div id="newAttendeesMonthlyBars"></div>
       </div>
     </div>
   </div>
@@ -1919,6 +1973,11 @@
   <div class="modal" id="attendanceBreakdownModalBody"></div>
 </div>
 
+<!-- NEW ATTENDEES BREAKDOWN MODAL (who's new this week / this month) -->
+<div class="modal-overlay" id="newAttendeesModalOverlay">
+  <div class="modal" id="newAttendeesModalBody"></div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1967,6 +2026,8 @@ function memberToDbRow(m){
     notes: m.notes || '',
     photo: m.photo || '',
     active: m.active !== false,
+    regular_member: !!m.regularMember,
+    regular_member_date: m.regularMemberDate || null,
   };
 }
 function dbRowToMember(r){
@@ -1992,6 +2053,8 @@ function dbRowToMember(r){
     notes: r.notes || '',
     photo: r.photo || '',
     active: r.active !== false,
+    regularMember: !!r.regular_member,
+    regularMemberDate: r.regular_member_date || '',
   };
 }
 
@@ -3457,6 +3520,7 @@ function membershipHistorySummary(m){
 function setTab(tab){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
   $('view-roster').style.display = tab==='roster' ? '' : 'none';
+  $('view-newmembers').style.display = tab==='newmembers' ? '' : 'none';
   $('view-inactive').style.display = tab==='inactive' ? '' : 'none';
   $('view-attendance').style.display = tab==='attendance' ? '' : 'none';
   $('view-workers').style.display = tab==='workers' ? '' : 'none';
@@ -3466,6 +3530,7 @@ function setTab(tab){
   $('view-mom').style.display = tab==='mom' ? '' : 'none';
   $('view-structure').style.display = tab==='structure' ? '' : 'none';
   if(tab==='inactive'){ renderInactive(); }
+  if(tab==='newmembers'){ renderNewMembers(); }
   if(tab==='attendance'){ setAttendanceSub('overview'); }
   if(tab==='workers'){ renderWorkerAnniversary(); }
   if(tab==='volunteers'){ renderVolunteerAnniversary(); }
@@ -3493,12 +3558,217 @@ function renderAll(){
   renderTrainings();
   renderCelebTodayBanner();
   renderReminderBanner();
-  $('rosterCount').textContent = activeMembers().length;
+  $('rosterCount').textContent = regularRosterMembers().length;
   $('inactiveCount').textContent = inactiveMembers().length;
+  $('newMemberCount').textContent = newMembers().length;
 }
 
 function activeMembers(){ return members.filter(m=>m.active !== false); }
 function inactiveMembers(){ return members.filter(m=>m.active === false); }
+
+// ---- New Members ----
+// A member shows up in the "New Members" tab automatically, based purely
+// on data already in Supabase: they're active, they have a "Started
+// Attending" date, that date is within NEW_MEMBER_WINDOW_DAYS of today,
+// and they haven't already been transferred to Regular Member. Adjust the
+// window below if the church wants a longer/shorter "new member" period.
+const NEW_MEMBER_WINDOW_DAYS = 90;
+// Once a new member has this many recorded attendances, the "Transfer to
+// Regular Member" button appears on their row.
+const NEW_MEMBER_TRANSFER_THRESHOLD = 12;
+
+function daysSince(dateStr){
+  if(!dateStr) return null;
+  const d = new Date(dateStr + 'T00:00:00');
+  const now = new Date();
+  const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((todayMid - d) / 86400000);
+}
+
+function newMembers(){
+  return activeMembers().filter(m=>{
+    if(m.regularMember) return false;
+    if(!m.startedAttending) return false;
+    const days = daysSince(m.startedAttending);
+    return days !== null && days >= 0 && days <= NEW_MEMBER_WINDOW_DAYS;
+  });
+}
+
+// Active members minus whoever currently belongs in the "New" tab — this is
+// what the Active roster table/tab actually displays and counts. New
+// members stay out of the Active list until they're transferred to
+// Regular (or their New window lapses).
+function regularRosterMembers(){
+  const newIds = new Set(newMembers().map(m=>m.id));
+  return activeMembers().filter(m=>!newIds.has(m.id));
+}
+
+// Friendly "time as new member" label, e.g. "3 weeks", "2 months".
+function newMemberDurationLabel(startedStr){
+  const days = daysSince(startedStr);
+  if(days === null) return '—';
+  if(days < 1) return 'Today';
+  if(days < 14) return days === 1 ? '1 day' : `${days} days`;
+  if(days < 60){ const w = Math.floor(days/7); return w===1 ? '1 week' : `${w} weeks`; }
+  const { years, months } = calcYearsMonthsAttending(startedStr);
+  if(years > 0) return `${years}y ${months}m`;
+  return months <= 1 ? '1 month' : `${months} months`;
+}
+
+// ---- New attendees report: how many members started attending in each
+// of the last 8 service weeks / last 6 calendar months, based purely on
+// each member's "Started Attending" date (not tied to who's still in the
+// New tab, so the trend line doesn't drop once someone is transferred).
+function renderNewAttendeesReport(){
+  const todayD = new Date();
+
+  const weeks = [];
+  for(let i=7; i>=0; i--){
+    const weekEnd = new Date(todayD);
+    weekEnd.setDate(todayD.getDate() - (i * 7));
+    const weekStart = new Date(weekEnd);
+    weekStart.setDate(weekEnd.getDate() - 6);
+    const startStr = isoDate(weekStart);
+    const endStr = isoDate(weekEnd);
+    const count = members.filter(m => m.startedAttending && m.startedAttending >= startStr && m.startedAttending <= endStr).length;
+    weeks.push({ label: weekEnd.toLocaleDateString('en-US', {month:'short', day:'numeric'}), count });
+  }
+  renderRankedBars('newAttendeesWeeklyBars', weeks, 'No new attendees recorded yet.');
+
+  const months = [];
+  for(let i=5; i>=0; i--){
+    const d = new Date(todayD.getFullYear(), todayD.getMonth() - i, 1);
+    const mStart = new Date(d.getFullYear(), d.getMonth(), 1);
+    const mEnd = new Date(d.getFullYear(), d.getMonth()+1, 0);
+    const startStr = isoDate(mStart);
+    const endStr = isoDate(mEnd);
+    const count = members.filter(m => m.startedAttending && m.startedAttending >= startStr && m.startedAttending <= endStr).length;
+    months.push({ label: d.toLocaleDateString('en-US', {month:'short', year:'2-digit'}), count });
+  }
+  renderRankedBars('newAttendeesMonthlyBars', months, 'No new attendees recorded yet.');
+
+  $('statNewAttendeesThisWeek').textContent = weeks.length ? weeks[weeks.length-1].count : 0;
+  $('statNewAttendeesThisMonth').textContent = months.length ? months[months.length-1].count : 0;
+}
+
+function closeNewAttendeesBreakdown(){
+  const overlay = $('newAttendeesModalOverlay');
+  overlay.classList.add('closing');
+  setTimeout(()=>{
+    overlay.classList.remove('open');
+    overlay.classList.remove('closing');
+  }, 160);
+}
+
+// Shows the list of members whose Started Attending date falls in the
+// current service week (Saturday–Friday, ending today) or current
+// calendar month — the same ranges used for the "New this week" /
+// "New this month" stat chips.
+function openNewAttendeesBreakdown(period){
+  const todayD = new Date();
+  let startStr, endStr, title;
+  if(period === 'week'){
+    const weekEnd = new Date(todayD);
+    const weekStart = new Date(todayD);
+    weekStart.setDate(todayD.getDate() - 6);
+    startStr = isoDate(weekStart);
+    endStr = isoDate(weekEnd);
+    title = `New attendees this week`;
+  } else {
+    const mStart = new Date(todayD.getFullYear(), todayD.getMonth(), 1);
+    const mEnd = new Date(todayD.getFullYear(), todayD.getMonth()+1, 0);
+    startStr = isoDate(mStart);
+    endStr = isoDate(mEnd);
+    title = `New attendees this month`;
+  }
+
+  const list = members
+    .filter(m => m.startedAttending && m.startedAttending >= startStr && m.startedAttending <= endStr)
+    .sort((a,b)=> (a.startedAttending||'').localeCompare(b.startedAttending||'') || (a.name||'').localeCompare(b.name||''));
+
+  const rows = list.length
+    ? list.map(m=>`
+        <div class="baptism-list-row" onclick="closeNewAttendeesBreakdown(); setTimeout(()=>openDetail('${m.id}'), 170);">
+          <span>${escapeHtml(m.name)}</span>
+          <span class="bl-ministry">${m.startedAttending ? fmtDate(m.startedAttending) : ''}</span>
+        </div>`).join('')
+    : '<div class="baptism-list-empty">No new attendees in this period</div>';
+
+  const html = `
+    <h2>${title}</h2>
+    <div class="modal-sub">${fmtDate(startStr)} – ${fmtDate(endStr)} · ${list.length} new attendee${list.length===1?'':'s'}, based on Started Attending date.</div>
+
+    <div class="baptism-list-title">Names (${list.length})</div>
+    <div class="baptism-list">${rows}</div>
+
+    <div class="modal-actions">
+      <div></div>
+      <div class="right">
+        <button type="button" class="btn btn-primary" onclick="closeNewAttendeesBreakdown()">Close</button>
+      </div>
+    </div>
+  `;
+  $('newAttendeesModalBody').innerHTML = html;
+  $('newAttendeesModalOverlay').classList.add('open');
+}
+
+async function renderNewMembers(){
+  $('newMemberWindowLabel').textContent = `${NEW_MEMBER_WINDOW_DAYS} days`;
+  $('newMemberThresholdLabel').textContent = NEW_MEMBER_TRANSFER_THRESHOLD;
+  renderNewAttendeesReport();
+
+  const q = ($('searchBoxNewMembers') ? $('searchBoxNewMembers').value : '').trim().toLowerCase();
+  let list = newMembers().filter(m=>{
+    return !q || [m.name, m.ministry, m.inviter].some(v=>(v||'').toLowerCase().includes(q));
+  });
+
+  const records = await loadAllAttendanceRecords();
+  const statsMap = buildMemberAttendanceStats(records);
+  const attendanceCount = m => (statsMap[m.id] ? statsMap[m.id].dates.length : 0);
+
+  // Members closest to the transfer milestone float to the top.
+  list.sort((a,b)=> attendanceCount(b) - attendanceCount(a) || (a.startedAttending||'').localeCompare(b.startedAttending||''));
+
+  const body = $('newMembersBody');
+  body.innerHTML = list.map(m=>{
+    const count = attendanceCount(m);
+    const readyToTransfer = count >= NEW_MEMBER_TRANSFER_THRESHOLD;
+    return `
+    <tr onclick="openDetail('${m.id}')">
+      <td>${avatarHtml(m, 'avatar', 'avatar-fallback')}</td>
+      <td class="mono muted">${m.memberNo || '—'}</td>
+      <td class="name-cell">${escapeHtml(m.name)}</td>
+      <td class="mono muted">${m.startedAttending ? fmtDate(m.startedAttending) : '—'}</td>
+      <td class="mono muted">${newMemberDurationLabel(m.startedAttending)}</td>
+      <td class="mono">${count} / ${NEW_MEMBER_TRANSFER_THRESHOLD}</td>
+      <td>
+        <div class="row-actions">
+          ${readyToTransfer && canEditData() ? `<button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); transferToRegular('${m.id}')">Transfer to Regular Member</button>` : ''}
+          ${canEditData() ? `<button class="btn btn-sm" onclick="event.stopPropagation(); openForm('${m.id}')">Edit</button>` : ''}
+        </div>
+      </td>
+    </tr>
+  `;}).join('');
+
+  $('newMembersEmptyState').style.display = list.length ? 'none' : '';
+  $('statNewMembersTotal').textContent = list.length;
+  $('statNewMembersReady').textContent = list.filter(m=>attendanceCount(m) >= NEW_MEMBER_TRANSFER_THRESHOLD).length;
+  $('newMemberCount').textContent = newMembers().length;
+}
+
+async function transferToRegular(id){
+  if(!canEditData()) return;
+  const m = members.find(x=>x.id===id);
+  if(!m) return;
+  if(!confirm(`Transfer ${m.name || 'this member'} to Regular Member?`)) return;
+  m.regularMember = true;
+  m.regularMemberDate = todayIso();
+  m.notes = appendNoteText(m.notes, 'Transferred to Regular Member.');
+  await saveOneMember(m);
+  renderNewMembers();
+  renderAll();
+  toast(`${m.name || 'Member'} transferred to Regular Member`);
+}
 
 function renderMinistryFilter(){
   const sel = $('ministryFilter');
@@ -3589,7 +3859,7 @@ function avatarHtml(m, imgClass, fallbackClass){
 function renderRoster(){
   const q = $('searchBox').value.trim().toLowerCase();
   const ministryFilter = $('ministryFilter').value;
-  let list = activeMembers().filter(m=>{
+  let list = regularRosterMembers().filter(m=>{
     const matchesQ = !q || [m.name,m.ministry,m.inviter].some(v=>(v||'').toLowerCase().includes(q));
     const matchesMinistry = matchesMinistryFilter(m, ministryFilter);
     return matchesQ && matchesMinistry;
@@ -3631,7 +3901,7 @@ function renderRoster(){
   `).join('');
 
   $('emptyState').style.display = list.length ? 'none' : '';
-  const active = activeMembers();
+  const active = regularRosterMembers();
   $('statTotal').textContent = active.length;
   $('statBaptized').textContent = active.filter(m=>m.baptized).length;
   $('statWorkers').textContent = active.filter(m=>m.worker||m.leader).length;
