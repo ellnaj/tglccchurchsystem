@@ -145,6 +145,11 @@
         </div>
 
         <div class="field">
+          <label>Inviter or whose invited you</label>
+          <input type="text" id="f-inviter" placeholder="Type the name of who invited you" oninput="applyProperCase(this)">
+        </div>
+
+        <div class="field">
           <label>Contact number</label>
           <input type="tel" id="f-contact" placeholder="05XXXXXXXX">
         </div>
@@ -260,7 +265,7 @@ async function submitRegistration(){
     contact: $('f-contact').value.trim(),
     address: $('f-address').value.trim(),
     started_attending: todayStr(),
-    inviter: '',
+    inviter: $('f-inviter').value.trim(),
     baptized: false,
     baptized_date: null,
     worker: false,
