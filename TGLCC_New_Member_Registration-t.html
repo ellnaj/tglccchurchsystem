@@ -159,6 +159,8 @@
           <input type="text" id="f-address" placeholder="Type your location" oninput="applyProperCase(this)">
         </div>
 
+        <div class="error-text" id="dupError" style="margin-top:0;"></div>
+
         <button type="button" class="btn btn-primary btn-block" id="submitBtn" onclick="submitRegistration()">Register</button>
       </form>
     </div>
@@ -245,6 +247,82 @@ function updateAge(){
   $('f-age').value = age === '' ? '' : `${age} years old`;
 }
 
+// ---- Duplicate-check helpers (name similarity) ----
+function normalizeName(s){
+  return (s || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function levenshtein(a, b){
+  if(a === b) return 0;
+  if(!a.length) return b.length;
+  if(!b.length) return a.length;
+  let prev = Array.from({length: b.length + 1}, (_, i) => i);
+  for(let i = 1; i <= a.length; i++){
+    const cur = [i];
+    for(let j = 1; j <= b.length; j++){
+      cur[j] = Math.min(
+        prev[j] + 1,
+        cur[j-1] + 1,
+        prev[j-1] + (a[i-1] === b[j-1] ? 0 : 1)
+      );
+    }
+    prev = cur;
+  }
+  return prev[b.length];
+}
+
+function similarity(a, b){
+  const max = Math.max(a.length, b.length);
+  return max === 0 ? 1 : 1 - levenshtein(a, b) / max;
+}
+
+function namesSimilar(a, b){
+  const na = normalizeName(a);
+  const nb = normalizeName(b);
+  if(!na || !nb) return false;
+  if(na === nb) return true;
+
+  // ignore word order and spacing ("Cruz Juan Dela" vs "Juan Dela Cruz", "DelaCruz")
+  const sa = na.split(' ').sort().join(' ');
+  const sb = nb.split(' ').sort().join(' ');
+  if(sa === sb || sa.replace(/ /g, '') === sb.replace(/ /g, '')) return true;
+
+  // minor spelling differences
+  if(similarity(sa, sb) >= 0.8) return true;
+
+  // one name contains all the words of the other (e.g. a missing middle name)
+  const ta = na.split(' '), tb = nb.split(' ');
+  const [short, long] = ta.length <= tb.length ? [ta, tb] : [tb, ta];
+  if(short.length >= 2 && short.every(t => long.includes(t))) return true;
+
+  return false;
+}
+
+async function findDuplicateMember(name, birthday){
+  // Only members with the same birthday are candidates.
+  const { data, error } = await supabaseClient
+    .from('members')
+    .select('name, birthday')
+    .eq('birthday', birthday);
+  if(error) throw error;
+  return (data || []).find(m => namesSimilar(name, m.name)) || null;
+}
+
+function showDuplicateError(existingName){
+  const el = $('dupError');
+  el.replaceChildren(
+    document.createTextNode('Duplicate member detected. A member with a similar name and the same birthday already exists.'),
+    document.createElement('br'),
+    document.createTextNode('Existing record: ' + existingName)
+  );
+  el.classList.add('show');
+}
+
 async function submitRegistration(){
   const name = $('f-name').value.trim();
   if(!name){
@@ -253,10 +331,31 @@ async function submitRegistration(){
     return;
   }
   $('nameError').classList.remove('show');
+  $('dupError').classList.remove('show');
 
   const btn = $('submitBtn');
   btn.disabled = true;
   btn.textContent = 'Registering…';
+
+  // Duplicate check: similar name + same birthday must be blocked BEFORE inserting.
+  const birthdayValue = $('f-birthday').value;
+  if(birthdayValue){
+    try{
+      const dup = await findDuplicateMember(name, birthdayValue);
+      if(dup){
+        showDuplicateError(dup.name);
+        btn.disabled = false;
+        btn.textContent = 'Register';
+        return;
+      }
+    }catch(e){
+      console.error('Duplicate check failed:', e);
+      toast('⚠ Could not verify existing members — check your internet connection and try again');
+      btn.disabled = false;
+      btn.textContent = 'Register';
+      return;
+    }
+  }
 
   const row = {
     id: uid(),
