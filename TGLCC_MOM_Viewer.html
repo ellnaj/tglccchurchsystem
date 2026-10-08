@@ -365,9 +365,73 @@
     /* Signature block always stays intact on one page. */
     .mom-sign{page-break-inside:avoid;break-inside:avoid;margin-top:60px;}
   }
+
+  /* ---- login gate (added) ---- */
+  body.auth-locked .wrap, body.auth-locked .modal-overlay{display:none !important;}
+  .login-screen{
+    display:none;min-height:100vh;align-items:center;justify-content:center;padding:20px;background:var(--paper);
+  }
+  body.auth-locked .login-screen{display:flex;}
+  .login-card{
+    width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line-strong);
+    border-radius:12px;padding:28px 24px;box-shadow:0 10px 30px -10px rgba(41,38,32,.25);
+  }
+  .login-brand{text-align:center;margin-bottom:18px;}
+  .login-brand img{
+    width:64px;height:64px;border-radius:50%;object-fit:cover;
+    box-shadow:0 0 0 2px var(--surface), 0 0 0 3px var(--line-strong), 0 2px 5px rgba(41,38,32,.15);
+  }
+  .login-brand .church-name{margin-top:10px;}
+  .login-brand h1{font-family:var(--font-display);font-weight:600;font-size:21px;margin:2px 0 0;}
+  .login-form{display:flex;flex-direction:column;gap:12px;}
+  .login-label{font-size:12.5px;font-weight:600;color:var(--ink-soft);display:flex;flex-direction:column;gap:5px;}
+  .login-input{
+    width:100%;padding:10px 12px;border:1px solid var(--line-strong);border-radius:8px;
+    background:var(--surface);font-family:var(--font-body);font-size:16px;color:var(--ink);min-height:44px;
+  }
+  .login-input:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px var(--green-tint);}
+  .login-error{
+    display:none;background:#FDECEA;border:1px solid #E8B4AE;color:#8A2A20;border-radius:8px;
+    padding:9px 12px;font-size:13px;font-weight:600;
+  }
+  .login-error.show{display:block;}
+  .btn-login{
+    padding:11px 18px;border-radius:var(--radius);border:1px solid var(--green);background:var(--green);color:#fff;
+    font-family:var(--font-body);font-size:14.5px;font-weight:700;cursor:pointer;min-height:46px;
+    box-shadow:0 2px 6px rgba(63,82,182,.35);transition:background .15s, border-color .15s;
+  }
+  .btn-login:hover:not(:disabled){background:var(--green-dark);border-color:var(--green-dark);}
+  .btn-login:disabled{opacity:.6;cursor:not-allowed;}
+  .btn-logout{
+    display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:var(--radius);
+    background:var(--surface);border:1px solid var(--line-strong);color:var(--ink);font-family:var(--font-body);
+    font-size:13.5px;font-weight:700;white-space:nowrap;cursor:pointer;margin-left:8px;
+    transition:background .15s, border-color .15s;
+  }
+  .btn-logout:hover{background:var(--green-tint);border-color:var(--green);}
+  .masthead-right{display:flex;align-items:center;}
+  @media(max-width:640px){ .btn-logout{padding:8px 13px;font-size:12.5px;} }
+  @media print{ .login-screen{display:none !important;} }
 </style>
 </head>
-<body>
+<body class="auth-locked">
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-brand">
+      <img id="loginLogo" alt="Church logo">
+      <div class="church-name">The Greatest Love of Christ Church</div>
+      <h1>Leader Login</h1>
+    </div>
+    <form class="login-form" id="loginForm" autocomplete="on">
+      <label class="login-label">Password
+        <input class="login-input" id="loginPass" type="password" autocomplete="current-password" required>
+      </label>
+      <div class="login-error" id="loginError" role="alert"></div>
+      <button type="submit" class="btn-login" id="loginBtn">Log In</button>
+    </form>
+  </div>
+</div>
 
 <div class="wrap">
   <div class="masthead">
@@ -793,7 +857,83 @@ document.addEventListener('keydown', function(e){
   fullViewSyncObserver.observe(watchTarget, { childList:true, subtree:true });
 })();
 
-loadMOM();
+/* ================= LOGIN GATE (added) ================= */
+// Column names in `app_users` — adjust if your table uses different names.
+const AUTH_PASS_COL = 'password';
+const AUTH_ROLE_COL = 'role';
+const AUTH_REQUIRED_ROLE = 'leader';
+const AUTH_SESSION_KEY = 'tglcc_mom_auth';
+
+(function(){
+  const logo = document.querySelector('.masthead-logo');
+  const loginLogo = document.getElementById('loginLogo');
+  if(logo && loginLogo) loginLogo.src = logo.src;
+
+  let started = false;
+  function startApp(){
+    document.body.classList.remove('auth-locked');
+    if(!started){
+      started = true;
+      addLogoutButton();
+      loadMOM();
+    }
+  }
+  function addLogoutButton(){
+    const right = document.querySelector('.masthead-right');
+    if(!right || document.getElementById('logoutBtn')) return;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.id = 'logoutBtn';
+    b.className = 'btn-logout';
+    b.textContent = 'Log Out';
+    b.onclick = logout;
+    right.appendChild(b);
+  }
+  function logout(){
+    try{ sessionStorage.removeItem(AUTH_SESSION_KEY); }catch(e){}
+    window.location.reload();
+  }
+  function showError(msg){
+    const el = document.getElementById('loginError');
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+
+  document.getElementById('loginForm').addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    const pass = document.getElementById('loginPass').value;
+    const btn = document.getElementById('loginBtn');
+    document.getElementById('loginError').classList.remove('show');
+    if(!pass){ showError('Please enter your password.'); return; }
+    btn.disabled = true; btn.textContent = 'Checking…';
+    try{
+      const { data, error } = await supabaseClient
+        .from('app_users')
+        .select('*')
+        .eq(AUTH_PASS_COL, pass)
+        .limit(1);
+      if(error) throw error;
+      const row = (data && data[0]) || null;
+      if(!row){
+        showError('Incorrect password. Please try again.');
+      }else if(String(row[AUTH_ROLE_COL] || '').trim().toLowerCase() !== AUTH_REQUIRED_ROLE){
+        showError('Access denied. Only users with the "leader" role can view the minutes.');
+      }else{
+        try{ sessionStorage.setItem(AUTH_SESSION_KEY, '1'); }catch(e){}
+        document.getElementById('loginPass').value = '';
+        startApp();
+      }
+    }catch(e){
+      console.error('Login failed:', e);
+      showError('Unable to verify your login right now. Please check your connection and try again.');
+    }
+    btn.disabled = false; btn.textContent = 'Log In';
+  });
+
+  let remembered = false;
+  try{ remembered = sessionStorage.getItem(AUTH_SESSION_KEY) === '1'; }catch(e){}
+  if(remembered) startApp();
+})();
 </script>
 </body>
 </html>
